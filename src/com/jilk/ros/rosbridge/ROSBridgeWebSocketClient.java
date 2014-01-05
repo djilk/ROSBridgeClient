@@ -34,7 +34,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        System.out.println( "Connection open." );
+        System.out.println("Connection open.");
     }
 
     @Override
@@ -50,7 +50,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         // Close codes are documented in class org.java_websocket.framing.CloseFrame
-        System.out.println( "Connection closed.");
+        System.out.println("Connection closed.");
         if (remote)
             System.out.println("Reason: " + reason);
     }
