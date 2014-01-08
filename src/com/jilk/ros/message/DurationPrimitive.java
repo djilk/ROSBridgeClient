@@ -9,6 +9,7 @@ package com.jilk.ros.message;
  *
  * @author David J. Jilk
  */
+@MessageType(string = "std_msgs/Duration")
 public class DurationPrimitive extends TimePrimitive {
 
 }

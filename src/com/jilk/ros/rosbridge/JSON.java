@@ -7,13 +7,27 @@ package com.jilk.ros.rosbridge;
 
 import org.json.simple.*;
 import org.json.simple.parser.*;
-import java.io.FileReader;
 import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 
 import com.jilk.ros.message.Message;
+import com.jilk.ros.rosbridge.indication.Indication;
 
+// temporary - for tests
+import com.jilk.ros.rosbridge.operation.*;
+import com.jilk.ros.message.*;
+
+// The slightly crazy abstractions here are designed to isolate knowledge of
+//    the JSON library and data types from the Operation details of rosbridge.
+//    Why is this important?  A few reasons I can see.  First, we might want
+//    to change JSON libraries and this encapsulates all use of JSON-simple.
+//    Second, as much as possible I would like the semantics of the rosbridge
+//    protocol to be encapsulated in the Operation and its subclasses rather
+//    than in a module that is essentially about serialization.
+//
+//    Unfortunately the hierarchical Message abstraction is a bit broken at the
+//    
 
 /**
  *
@@ -27,7 +41,8 @@ public class JSON {
     }
     
     public static Message toMessage(String json, Class c) {
-        JSONObject jo = toJSONObject(json);
+        JSONObject joUnwrapped = toJSONObject(json);
+        JSONObject jo = wrap(joUnwrapped, c);  // a hack to make the hierarchy homogeneous
         return toMessage(jo, c);
     }
     
@@ -83,7 +98,16 @@ public class JSON {
         r.close();        
         return result;
     }
-        
+    
+    private static JSONObject wrap(JSONObject jo, Class c) {
+        JSONObject result = new JSONObject();
+        String indicatorName = Indication.getIndicatorName(c);
+        String indicatedName = Indication.getIndicatedName(c);
+        result.put(indicatorName, jo.get(indicatorName));
+        result.put(indicatedName, jo);
+        return result;
+    }
+            
     private static Message toMessage(JSONObject jo, Class c) {
         try {
             Message result = (Message) c.newInstance();
@@ -91,8 +115,13 @@ public class JSON {
                 Object lookup = jo.get(f.getName());
                 Object value = null;
                 if (lookup != null) {
-                    if (lookup.getClass().equals(JSONObject.class))
-                        value = toMessage((JSONObject) lookup, f.getType());
+                    if (lookup.getClass().equals(JSONObject.class)) {
+                        Class fc = f.getType();
+                        if (Indication.isIndicated(f))
+                            fc = Indication.getIndication(result,
+                                    (String) jo.get(Indication.getIndicatorName(c)));
+                        value = toMessage((JSONObject) lookup, fc);
+                    }
                     else if (lookup.getClass().equals(JSONArray.class))
                         value = toArray((JSONArray) lookup, f.getType().getComponentType());
                     else
@@ -178,6 +207,22 @@ public class JSON {
         t.myTS.myBoolean2DArray = new boolean[][] {new boolean[] {true, true}, new boolean[] {false, false}};
         t.print();
         System.out.println(toJSON(t));
+
+        Operation.initialize();
+        Message.register(Clock.class);
+        Publish p = new Publish();
+        p.topic = "rosgraph_msgs/Clock";
+        Clock c = new Clock();
+        c.data = new TimePrimitive();
+        c.data.secs = 1000;
+        c.data.nsecs = 999999999;
+        p.msg = c;
+        p.print();
+        String json = toJSON(p);
+        System.out.println(json);
+        Message p2 = toMessage(json, Wrapper.class);
+        p2.print();
+        
     }
     
     public static class TestClass extends Message {

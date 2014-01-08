@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package com.jilk.ros.rosbridge.message;
+package com.jilk.ros.rosbridge.operation;
 
 import com.jilk.ros.message.MessageType;
 

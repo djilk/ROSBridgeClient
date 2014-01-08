@@ -7,8 +7,8 @@ package com.jilk.ros.rosbridge;
 
 
 import com.jilk.ros.message.Message;
-import com.jilk.ros.rosbridge.message.Subscribe;
-import com.jilk.ros.rosbridge.message.Operation;
+import com.jilk.ros.rosbridge.operation.Subscribe;
+import com.jilk.ros.rosbridge.operation.Operation;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -48,6 +48,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         System.out.println("op:" + op.op);
         Message fullOp = JSON.toMessage(message, Message.lookup(op.op));
         fullOp.print();
+        // one more step here - need to decode the message as its actual message type
     }
        
     @Override

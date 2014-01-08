@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package com.jilk.ros.rosbridge.message;
+package com.jilk.ros.rosbridge.operation;
 
 import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
@@ -38,6 +38,7 @@ public class Operation extends Message {
         Message.register(Operation.class);
         Message.register(Publish.class);
         Message.register(Subscribe.class);
+        Message.register(Wrapper.class);
     }
     
     public static void main(String[] args) {
