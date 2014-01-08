@@ -3,8 +3,8 @@
     "version": 1,
     "uri": "ws://162.243.238.80:9090",
     "subscribe": [
-        ["/clock", "rosgraph_msgs/Clock"],
-        ["/othertopic", "msgs/OtherTopic"]
+        ["/clock", "Clock"],
+        ["/othertopic", "OtherTopic"]
     ],
     "advertise": [
         ["/publishtopic", "msgs/PublishMsg"]

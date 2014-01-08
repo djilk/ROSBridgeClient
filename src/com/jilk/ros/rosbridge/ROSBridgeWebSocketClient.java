@@ -5,6 +5,10 @@
 
 package com.jilk.ros.rosbridge;
 
+
+import com.jilk.ros.message.Message;
+import com.jilk.ros.rosbridge.message.Subscribe;
+import com.jilk.ros.rosbridge.message.Operation;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -40,11 +44,10 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         System.out.println("Received message: " + message);
-        ROSBridgeOperation op = ROSBridgeJSONObject.operationFactory(message);
+        Operation op = (Operation) JSON.toMessage(message, Operation.class);
         System.out.println("op:" + op.op);
-        ROSBridgeJSONObject rboj = new ROSBridgeJSONObject();
-        rboj.set(op);
-        System.out.println(rboj.toJSONString());
+        Message fullOp = JSON.toMessage(message, Message.lookup(op.op));
+        fullOp.print();
     }
        
     @Override
@@ -60,6 +63,8 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         ex.printStackTrace();
     }
 
+    //  1/7: coded but untested - need to try with real ROS
+    
     public static void main( String[] args ) throws URISyntaxException {
         ROSBridgeWebSocketClient c = ROSBridgeWebSocketClient.create("ws://162.243.238.80:9090");
         if (c != null) {
@@ -67,10 +72,8 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
                 if (c.connectBlocking()) {
                     String msg;
                     //msg = "{\"op\": \"subscribe\", \"topic\": \"/clock\", \"type\": \"rosgraph_msgs/Clock\"}";
-                    SubscribeOperation s = new SubscribeOperation("/clock", "rosgraph_msgs/Clock");
-                    ROSBridgeJSONObject rbjo = new ROSBridgeJSONObject();
-                    rbjo.set(s);
-                    msg = rbjo.toJSONString();
+                    Subscribe s = new Subscribe("/clock", "rosgraph_msgs/Clock");
+                    msg = JSON.toJSON(s);
                     System.out.println("subscribe: " + msg);
                     c.send(msg);
                     try {Thread.sleep(20000);} catch(Exception ex) {}
