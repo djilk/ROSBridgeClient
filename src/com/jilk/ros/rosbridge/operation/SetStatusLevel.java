@@ -5,6 +5,7 @@
 
 package com.jilk.ros.rosbridge.operation;
 
+import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
 
 
@@ -13,7 +14,7 @@ import com.jilk.ros.message.MessageType;
  * @author David J. Jilk
  */
 @MessageType(string = "set_level")
-public class SetStatusLevel {
+public class SetStatusLevel extends Operation {
     public String level;
     
     public SetStatusLevel() {}

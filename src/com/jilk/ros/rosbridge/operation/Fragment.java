@@ -5,6 +5,7 @@
 
 package com.jilk.ros.rosbridge.operation;
 
+import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
 
 /**
@@ -12,7 +13,7 @@ import com.jilk.ros.message.MessageType;
  * @author David J. Jilk
  */
 @MessageType(string = "fragment")
-public class Fragment {
+public class Fragment extends Operation {
     public String data;
     public int num;
     public int total;

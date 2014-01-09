@@ -7,6 +7,7 @@ package com.jilk.ros.rosbridge.operation;
 
 import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
+import com.jilk.ros.rosbridge.JSON;
 
 
 /**
@@ -31,19 +32,31 @@ public class Operation extends Message {
         return result;
     }
     
+    public String toJSON() {
+        return JSON.toJSON(this);
+    }
+    
+    public static Operation toOperation(String json) {
+        return ((Wrapper) JSON.toMessage(json, Wrapper.class)).msg;
+    }
+    
     // Operation subclasses are registered directly rather than through the
     //     passive static initializer approach, because they can be at the root
     //     of an inbound message and otherwise we wouldn't find them.
     public static void initialize() {
+        Message.register(Advertise.class);
+        Message.register(Authenticate.class);
+        Message.register(CallService.class);
+        Message.register(Fragment.class);
         Message.register(Operation.class);
+        Message.register(PNG.class);
         Message.register(Publish.class);
+        Message.register(ServiceResponse.class);
+        Message.register(SetStatusLevel.class);
+        Message.register(Status.class);
         Message.register(Subscribe.class);
+        Message.register(Unadvertise.class);
         Message.register(Wrapper.class);
     }
     
-    public static void main(String[] args) {
-        Operation.initialize();
-        System.out.println(Message.lookup("subscribe").getName());
-        System.out.println(Message.lookup("publish").getName());
-    }
 }

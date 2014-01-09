@@ -7,6 +7,8 @@ package com.jilk.ros.rosbridge.operation;
 
 import com.jilk.ros.message.MessageType;
 import com.jilk.ros.message.Message;
+import com.jilk.ros.rosbridge.Registry;
+import com.jilk.ros.rosbridge.indication.*;
 
 
 /**
@@ -14,12 +16,9 @@ import com.jilk.ros.message.Message;
  * @author David J. Jilk
  */
 @MessageType(string = "call_service")
-public class CallService {
-    public String service;
-    public Message[] args;  // when we add service invocations to rosbridge,
-                            //    there will need to be some way to do class
-                            //    indication for this array. Presumably tied to
-                            //    the service specification somehow.
+public class CallService extends Operation {
+    @Indicator public String service;
+    @Indicated @AsArray public Message args;  
     public Integer fragment_size; // use Integer for optional items
     public String compression;
 
@@ -28,4 +27,9 @@ public class CallService {
     public CallService(String service) {
         this.service = service;
     }    
+    
+    @Indicate
+    public Class indicate(String s) {
+        return Message.lookup(Registry.lookupServiceArgs(s));
+    }
 }

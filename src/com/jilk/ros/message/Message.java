@@ -23,9 +23,11 @@ public abstract class Message {
         try {
             typecheck(c);
             String messageString = ((MessageType) c.getAnnotation(MessageType.class)).string();
-            if (messageClasses.get(messageString) != null)
-                throw new MessageException("Class \'" + c.getName() +
-                    "\' has a duplicate message type: " + messageString);
+            Class existingClass = messageClasses.get(messageString);
+            if (existingClass != null && !existingClass.equals(c))
+                throw new MessageException("Message String \'" + messageString +
+                    "\' is assigned to two different classes (" +
+                        c.getName() + " and " + existingClass.getName() + ")");
             messageClasses.put(messageString, c);
         }
         catch (MessageException ex) {
@@ -56,9 +58,12 @@ public abstract class Message {
         //      so that they get registered
         for (Field f : c.getFields()) {
             Class fc = f.getType();
-            if (fc.isArray())
-                typecheck(fc.getComponentType());
-            else if (!fc.isPrimitive() && !String.class.equals(fc))
+            if (fc.isArray()) {
+                Class ac = fc.getComponentType(); 
+                if (!isPrimitive(ac))
+                    typecheck(ac);
+            }
+            else if (!isPrimitive(fc))
                 typecheck(fc);
         }
     }
@@ -72,7 +77,7 @@ public abstract class Message {
             Class c = f.getType();
             Object fieldObject = getFieldObject(f, o);
             if (fieldObject != null) {
-                if (isPrintPrimitive(c))
+                if (isPrimitive(c))
                     System.out.println(indent + f.getName() + ": " + fieldObject);
                 else if (c.isArray()) {
                     System.out.println(indent + f.getName() + ": [");                    
@@ -92,7 +97,7 @@ public abstract class Message {
         for (int i = 0; i < Array.getLength(array); i++) {
             Object elementObject = Array.get(array, i);
             if (elementObject != null) {
-                if (isPrintPrimitive(arrayClass))
+                if (isPrimitive(arrayClass))
                     System.out.println(indent + i + ": " + elementObject);
                 else if (arrayClass.isArray()) { // this is not actually allowed in ROS
                     System.out.println(indent + i + ": [");                    
@@ -107,7 +112,13 @@ public abstract class Message {
         }
         // remember to print array indices
     }
-        
+    
+    public static boolean isPrimitive(Class c) {
+        return (c.isPrimitive() ||
+                c.equals(String.class) ||
+                Number.class.isAssignableFrom(c) ||
+                c.equals(Boolean.class));        
+    }    
 
     // Copied from com.jilk.ros.rosbridge.JSON
     private static Object getFieldObject(Field f, Object o) {
@@ -119,15 +130,6 @@ public abstract class Message {
             ex.printStackTrace();
         }
         return fo;
-    }
-    
-    // Copied from com.jilk.ros.rosbridge.JSON
-    private static boolean isPrintPrimitive(Class c) {
-        return (c.isPrimitive() ||
-                c.equals(String.class) ||
-                c.equals(Integer.class) ||
-                c.equals(Long.class) ||
-                c.equals(Double.class));        
     }
     
 }

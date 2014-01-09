@@ -47,7 +47,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         System.out.println("Received message: " + message);
-        Operation op = (Operation) JSON.toMessage(message, Wrapper.class);
+        Operation op = Operation.toOperation(message);
         op.print();
     }
        
@@ -68,6 +68,9 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     //  1/8: still haven't tested in full
     
     public static void main( String[] args ) throws URISyntaxException {
+        Operation.initialize();
+        // register all the topics and service results here.
+        // when rosbridge allows clients to offer services, also need to register service args
         ROSBridgeWebSocketClient c = ROSBridgeWebSocketClient.create("ws://162.243.238.80:9090");
         if (c != null) {
             try {

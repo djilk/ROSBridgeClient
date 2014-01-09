@@ -24,7 +24,6 @@ public class Wrapper extends Operation {
 
     @Indicate
     public Class indicate(String s) {
-        System.out.println("Wrapper/indicate: " + s + " " + Message.lookup(s));
         return Message.lookup(s);
     }   
 }

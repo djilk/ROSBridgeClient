@@ -36,56 +36,68 @@ import com.jilk.ros.message.*;
 public class JSON {
 
     public static String toJSON(Message m) {
-        JSONObject jo = toJSONObject(m);
+        JSONObject jo = convertObjectToJSONObject(m);
         return jo.toJSONString();
     }
     
     public static Message toMessage(String json, Class c) {
-        JSONObject joUnwrapped = toJSONObject(json);
+        JSONObject joUnwrapped = convertStringToJSONObject(json);
         JSONObject jo = wrap(joUnwrapped, c);  // a hack to make the hierarchy homogeneous
-        return toMessage(jo, c);
+        return convertJSONObjectToMessage(jo, c);
     }
     
-    private static JSONObject toJSONObject(Object o) {
+    private static JSONObject convertObjectToJSONObject(Object o) {
         JSONObject result = new JSONObject();
         for (Field f : o.getClass().getFields()) {
-            Class c = f.getType();
             Object fieldObject = getFieldObject(f, o);
-            Object resultObject = null;
             if (fieldObject != null) {
-                if (isJSONPrimitive(c))
-                    resultObject = fieldObject;
-                else if (c.isArray())
-                    resultObject = toJSONArray(fieldObject);
-                else
-                    resultObject = toJSONObject(fieldObject);
+                Object resultObject;
+                if (Indication.asArray(f))
+                    resultObject = convertObjectToJSONArray(fieldObject);
+                else resultObject = convertElementToJSON(fieldObject);
                 result.put(f.getName(), resultObject);
             }
         }
         return result;
     }
     
-    private static JSONArray toJSONArray(Object array) {
+    private static JSONArray convertArrayToJSONArray(Object array) {
         JSONArray result = new JSONArray();
-        Class arrayClass = array.getClass().getComponentType();
         for (int i = 0; i < Array.getLength(array); i++) {
             Object elementObject = Array.get(array, i);
-            Object resultObject = null;
             if (elementObject != null) {
-                if (isJSONPrimitive(arrayClass))
-                    resultObject = elementObject;
-                else if (arrayClass.isArray())  // this is not actually allowed in ROS
-                    resultObject = toJSONArray(elementObject);
-                else
-                    resultObject = toJSONObject(elementObject);
+                Object resultObject = convertElementToJSON(elementObject);
                 result.add(resultObject);
             }
-        }
-        
+        }        
         return result;
     }
     
-    private static JSONObject toJSONObject(String json) {
+    private static JSONArray convertObjectToJSONArray(Object o) {
+        JSONArray result = new JSONArray();
+        for (Field f : o.getClass().getFields()) {
+            Object fieldObject = getFieldObject(f, o);
+            if (fieldObject != null) {
+                Object resultObject = convertElementToJSON(fieldObject);
+                result.add(resultObject);
+            }
+        }
+        return result;
+    }
+            
+    private static Object convertElementToJSON(Object elementObject) {
+        Class elementClass = elementObject.getClass();
+        Object resultObject;
+        if (Message.isPrimitive(elementClass))
+            resultObject = elementObject;
+        else if (elementClass.isArray())  
+            resultObject = convertArrayToJSONArray(elementObject);
+        else
+            resultObject = convertObjectToJSONObject(elementObject);
+        return resultObject;
+    }
+    
+    private static JSONObject convertStringToJSONObject(String json) {
         JSONObject result = null;
         StringReader r = new StringReader(json);
         JSONParser jp = new JSONParser();
@@ -99,6 +111,7 @@ public class JSON {
         return result;
     }
     
+    // A bit of a hack to create a consistent hierarchy with jsonbridge operations
     private static JSONObject wrap(JSONObject jo, Class c) {
         JSONObject result = new JSONObject();
         String indicatorName = Indication.getIndicatorName(c);
@@ -108,24 +121,69 @@ public class JSON {
         return result;
     }
             
-    private static Message toMessage(JSONObject jo, Class c) {
+    private static Message convertJSONObjectToMessage(JSONObject jo, Class c) {
         try {
             Message result = (Message) c.newInstance();
             for (Field f : c.getFields()) {
+                Class fc = getFieldClass(result, jo, f);
                 Object lookup = jo.get(f.getName());
-                Object value;
                 if (lookup != null) {
-                    if (lookup.getClass().equals(JSONObject.class)) {
-                        Class fc = f.getType();
-                        if (Indication.isIndicated(f))
-                            fc = Indication.getIndication(result,
-                                    (String) jo.get(Indication.getIndicatorName(c)));
-                        value = toMessage((JSONObject) lookup, fc);
-                    }
-                    else if (lookup.getClass().equals(JSONArray.class))
-                        value = toArray((JSONArray) lookup, f.getType().getComponentType());
-                    else
-                        value = lookup;
+                    Object value = convertElementToField(lookup, fc, f);
+                    f.set(result, value);
+                }
+            }            
+            return result;
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }        
+    }
+
+    private static Object convertElementToField(Object element, Class fc, Field f) {
+        Object value;
+        if (element.getClass().equals(JSONObject.class)) {
+            value = convertJSONObjectToMessage((JSONObject) element, fc);
+        }
+        else if (element.getClass().equals(JSONArray.class)) {
+            if (Indication.asArray(f))
+                value = convertJSONArrayToMessage((JSONArray) element, fc);
+            else value = convertJSONArrayToArray((JSONArray) element, fc);
+        }
+        else
+            value = convertJSONPrimitiveToPrimitive(element, fc);
+         
+       return value;        
+    }
+    
+    private static Object convertJSONArrayToArray(JSONArray ja, Class c) {
+        Object result = Array.newInstance(c, ja.size());
+        for (int i = 0; i < ja.size(); i++) {
+            Object lookup = ja.get(i);
+            Object value = null;
+            if (lookup != null) {
+                if (lookup.getClass().equals(JSONObject.class))
+                    value = convertJSONObjectToMessage((JSONObject) lookup, c);
+                else if (lookup.getClass().equals(JSONArray.class))  // this is not actually allowed in ROS
+                    value = convertJSONArrayToArray((JSONArray) lookup, c.getComponentType());
+                else 
+                    value = convertJSONPrimitiveToPrimitive(lookup, c);
+                Array.set(result, i, value);
+            }
+        }
+        
+        return result;
+    }
+    
+    private static Message convertJSONArrayToMessage(JSONArray ja, Class c) {
+        try {
+            Message result = (Message) c.newInstance();
+            int arrayIndex = 0;
+            for (Field f : c.getFields()) {
+                Class fc = getFieldClass(result, null, f);
+                Object lookup = ja.get(arrayIndex++);         // yes we are assuming that the fields are delivered in order
+                if (lookup != null) {
+                    Object value = convertElementToField(lookup, fc, f);
                     f.set(result, value);
                 }
             }
@@ -138,52 +196,37 @@ public class JSON {
         }        
     }
     
-    private static Object toArray(JSONArray ja, Class c) {
-        Object result = Array.newInstance(c, ja.size());
-        for (int i = 0; i < ja.size(); i++) {
-            Object lookup = ja.get(i);
-            Object value = null;
-            if (lookup != null) {
-                if (c.equals(JSONObject.class))
-                    value = toMessage((JSONObject) lookup, c);
-                else if (lookup.getClass().equals(JSONArray.class))  // this is not actually allowed in ROS
-                    value = toArray((JSONArray) lookup, c.getComponentType());
-                else 
-                    value = lookup;
-                Array.set(result, i, value);
-            }
+    // Note that this is not checking ranges
+    public static Object convertJSONPrimitiveToPrimitive(Object o, Class c) {
+        Object result = o;
+        if (c.isPrimitive() || Number.class.isAssignableFrom(c)) {
+            if (c.equals(double.class) || c.equals(Double.class))
+                result = new Double(((Number) o).doubleValue());
+            else if (c.equals(float.class) || c.equals(Float.class))
+                result = new Float(((Number) o).floatValue());
+            else if (c.equals(long.class) || c.equals(Long.class))
+                result = new Long(((Number) o).longValue());
+            else if (int.class.equals(c) || c.equals(Integer.class))
+                result = new Integer(((Number) o).intValue());
+            else if (c.equals(short.class) || c.equals(Short.class))
+                result = new Short(((Number) o).shortValue());
+            else if (c.equals(byte.class) || c.equals(Byte.class))
+                result = new Byte(((Number) o).byteValue());
         }
         
         return result;
     }
     
-        
-    /*
-    public static Operation operationFactory(String data) {
-        JSONObject j = get(data);
-        Operation result = null;
-        
-        String operation = (String) j.get("op");
-        Class c = Operation.class;
-        if ("publish".equals(operation))
-            c = Publish.class;
-        else if ("subscribe".equals(operation))
-            c = Subscribe.class;
-        
-        // If we're still good, get the constructor (trying both Block and List)
-        Constructor construct;
-        Class[] parameters = new Class[] {JSONObject.class};
-        try {
-            construct = c.getConstructor(parameters);
-            result = (Operation) construct.newInstance(j);
-        }
-        catch (ReflectiveOperationException ex) {
-            ex.printStackTrace();
-        }
-
-        return result;
-    }
-    */
+    public static Class getFieldClass(Message parent, JSONObject jo, Field f) {
+        Class fc;
+        fc = f.getType();
+        if (fc.isArray())
+            fc = f.getType().getComponentType();
+        if (Indication.isIndicated(f) && (jo != null))
+            fc = Indication.getIndication(parent,
+                    (String) jo.get(Indication.getIndicatorName(parent.getClass())));
+        return fc;
+    }    
     
     private static Object getFieldObject(Field f, Object o) {
         Object fo = null;
@@ -196,16 +239,9 @@ public class JSON {
         return fo;
     }
     
-    private static boolean isJSONPrimitive(Class c) {
-        return (c.isPrimitive() ||
-                c.equals(String.class) ||
-                c.equals(Integer.class) ||
-                c.equals(Long.class) ||
-                c.equals(Double.class));        
-    }
-     
    public static void main(String[] args) {
         TestClass t = new TestClass();
+        t.myInt = 99;
         t.myLong = 100000000;
         t.myDouble = 3.14159;
         t.myString = "Test String";
@@ -213,27 +249,55 @@ public class JSON {
         t.myTS.mySubString = "Test Sub String";
         t.myTS.myBooleanArray = new boolean[] {false, true};
         t.myTS.myBoolean2DArray = new boolean[][] {new boolean[] {true, true}, new boolean[] {false, false}};
+        System.out.println("Test Class");
         t.print();
-        System.out.println(toJSON(t));
+        System.out.println("Test Class as JSON");
+        String json = toJSON(t);
+        System.out.println(json);
 
         Operation.initialize();
-        Message.register(Clock.class);
+        Registry.registerTopic("/clock", Clock.class);
         Publish p = new Publish();
-        p.topic = "rosgraph_msgs/Clock";
+        p.topic = "/clock";
         Clock c = new Clock();
         c.data = new TimePrimitive();
         c.data.secs = 1000;
         c.data.nsecs = 999999999;
         p.msg = c;
+        
+        System.out.println("Publish Operation");
         p.print();
-        String json = toJSON(p);
+        json = toJSON(p);
+        System.out.println("Publish Operation as JSON");
         System.out.println(json);
-        Message p2 = toMessage(json, Wrapper.class);
+        
+        System.out.println("Publish Operation converted back from JSON");
+        Message p2 = Operation.toOperation(json);
         p2.print();
         
+        Registry.registerServiceArgs("/srv", Test.class);
+        Test t1 = new Test();
+        t1.testName = "Test Name";
+        t1.testInt = 77;
+        t1.testDouble = 2.71828;
+        t1.testShortArray = new short[] {1, 2, 3, 4};
+        CallService cs = new CallService("/srv");
+        cs.args = t1;
+        
+        System.out.println("CallService Operation");
+        cs.print();
+        json = toJSON(cs);
+
+        System.out.println("CallService Operation as JSON");
+        System.out.println(json);
+
+        System.out.println("CallService Operation converted back from JSON");
+        Message cs2 = Operation.toOperation(json);
+        cs2.print();        
     }
     
     public static class TestClass extends Message {
+        public long myInt;
         public long myLong;
         public double myDouble;
         public String myString;

@@ -17,6 +17,10 @@ public class Indication {
         return (f.getAnnotation(Indicated.class) != null);
     }
     
+    public static boolean asArray(Field f) {
+        return (f.getAnnotation(AsArray.class) != null);
+    }
+    
     public static String getIndicatorName(Class c) {
         return getName(c, Indicator.class);
     }
@@ -38,11 +42,9 @@ public class Indication {
     
     public static Class getIndication(Object o, String s) {
         Class c = o.getClass();
-        System.out.println(c.getName() + " " + s);
         Class result = null;
         try {
             Method m = getIndicateMethod(c);
-            System.out.println(m.getName());
             result = (Class) (m.invoke(o, s));
         }
         catch (ReflectiveOperationException ex) {

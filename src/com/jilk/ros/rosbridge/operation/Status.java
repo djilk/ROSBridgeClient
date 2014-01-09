@@ -5,6 +5,7 @@
 
 package com.jilk.ros.rosbridge.operation;
 
+import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
 
 /**
@@ -12,7 +13,7 @@ import com.jilk.ros.message.MessageType;
  * @author David J. Jilk
  */
 @MessageType(string = "status")
-public class Status {
+public class Status extends Operation {
     String level;
     String msg;
     
