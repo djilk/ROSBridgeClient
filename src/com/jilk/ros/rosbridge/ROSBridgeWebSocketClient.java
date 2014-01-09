@@ -5,15 +5,18 @@
 
 package com.jilk.ros.rosbridge;
 
-
-import com.jilk.ros.message.Message;
-import com.jilk.ros.rosbridge.operation.Subscribe;
-import com.jilk.ros.rosbridge.operation.Operation;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+
+import com.jilk.ros.rosbridge.operation.Wrapper;
+
+// tests
+import com.jilk.ros.rosbridge.operation.Subscribe;
+import com.jilk.ros.rosbridge.operation.Operation;
+
 /**
  *
  * @author David J. Jilk
@@ -44,11 +47,8 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         System.out.println("Received message: " + message);
-        Operation op = (Operation) JSON.toMessage(message, Operation.class);
-        System.out.println("op:" + op.op);
-        Message fullOp = JSON.toMessage(message, Message.lookup(op.op));
-        fullOp.print();
-        // one more step here - need to decode the message as its actual message type
+        Operation op = (Operation) JSON.toMessage(message, Wrapper.class);
+        op.print();
     }
        
     @Override
@@ -65,6 +65,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     }
 
     //  1/7: coded but untested - need to try with real ROS
+    //  1/8: still haven't tested in full
     
     public static void main( String[] args ) throws URISyntaxException {
         ROSBridgeWebSocketClient c = ROSBridgeWebSocketClient.create("ws://162.243.238.80:9090");

@@ -53,7 +53,7 @@ public class JSON {
             Object fieldObject = getFieldObject(f, o);
             Object resultObject = null;
             if (fieldObject != null) {
-                if (c.isPrimitive() || c.equals(String.class))
+                if (isJSONPrimitive(c))
                     resultObject = fieldObject;
                 else if (c.isArray())
                     resultObject = toJSONArray(fieldObject);
@@ -72,7 +72,7 @@ public class JSON {
             Object elementObject = Array.get(array, i);
             Object resultObject = null;
             if (elementObject != null) {
-                if (arrayClass.isPrimitive() || arrayClass.equals(String.class))
+                if (isJSONPrimitive(arrayClass))
                     resultObject = elementObject;
                 else if (arrayClass.isArray())  // this is not actually allowed in ROS
                     resultObject = toJSONArray(elementObject);
@@ -113,7 +113,7 @@ public class JSON {
             Message result = (Message) c.newInstance();
             for (Field f : c.getFields()) {
                 Object lookup = jo.get(f.getName());
-                Object value = null;
+                Object value;
                 if (lookup != null) {
                     if (lookup.getClass().equals(JSONObject.class)) {
                         Class fc = f.getType();
@@ -194,6 +194,14 @@ public class JSON {
             ex.printStackTrace();
         }
         return fo;
+    }
+    
+    private static boolean isJSONPrimitive(Class c) {
+        return (c.isPrimitive() ||
+                c.equals(String.class) ||
+                c.equals(Integer.class) ||
+                c.equals(Long.class) ||
+                c.equals(Double.class));        
     }
      
    public static void main(String[] args) {

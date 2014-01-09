@@ -15,9 +15,9 @@ import com.jilk.ros.message.MessageType;
 public class Subscribe extends Operation {
     public String topic;
     public String type;
-    public int throttle_rate;
-    public int queue_length;
-    public int fragment_size;
+    public Integer throttle_rate;   // use Integer for optional items
+    public Integer queue_length;    // use Integer for optional items
+    public Integer fragment_size;   // use Integer for optional items
     public String compression;
     
     public Subscribe() {}
@@ -25,12 +25,5 @@ public class Subscribe extends Operation {
     public Subscribe(String topic, String type) {
         this.topic = topic;
         this.type = type;
-    }
-    
-    public static void main(String[] args) {
-        Subscribe s = new Subscribe();
-        s.print();
-        s = new Subscribe("mytopic", "mytype");
-        s.print();
-    }
+    }    
 }

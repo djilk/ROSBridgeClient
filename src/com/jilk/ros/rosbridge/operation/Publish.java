@@ -10,6 +10,7 @@ import com.jilk.ros.rosbridge.indication.Indicated;
 import com.jilk.ros.rosbridge.indication.Indicate;
 import com.jilk.ros.message.MessageType;
 import com.jilk.ros.message.Message;
+import com.jilk.ros.rosbridge.Topic;
 
 
 /**
@@ -30,8 +31,6 @@ public class Publish extends Operation {
     
     @Indicate
     public Class indicate(String s) {
-        //return Message.lookup(Topic.lookup(s));
-        System.out.println("Publish/indicate: " + s + " " + Message.lookup(s));
-        return Message.lookup(s);
+        return Message.lookup(Topic.lookup(s));
     }
 }

@@ -72,7 +72,7 @@ public abstract class Message {
             Class c = f.getType();
             Object fieldObject = getFieldObject(f, o);
             if (fieldObject != null) {
-                if (c.isPrimitive() || c.equals(String.class))
+                if (isPrintPrimitive(c))
                     System.out.println(indent + f.getName() + ": " + fieldObject);
                 else if (c.isArray()) {
                     System.out.println(indent + f.getName() + ": [");                    
@@ -92,7 +92,7 @@ public abstract class Message {
         for (int i = 0; i < Array.getLength(array); i++) {
             Object elementObject = Array.get(array, i);
             if (elementObject != null) {
-                if (arrayClass.isPrimitive() || arrayClass.equals(String.class))
+                if (isPrintPrimitive(arrayClass))
                     System.out.println(indent + i + ": " + elementObject);
                 else if (arrayClass.isArray()) { // this is not actually allowed in ROS
                     System.out.println(indent + i + ": [");                    
@@ -119,6 +119,15 @@ public abstract class Message {
             ex.printStackTrace();
         }
         return fo;
+    }
+    
+    // Copied from com.jilk.ros.rosbridge.JSON
+    private static boolean isPrintPrimitive(Class c) {
+        return (c.isPrimitive() ||
+                c.equals(String.class) ||
+                c.equals(Integer.class) ||
+                c.equals(Long.class) ||
+                c.equals(Double.class));        
     }
     
 }
