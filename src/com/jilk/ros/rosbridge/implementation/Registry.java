@@ -3,11 +3,11 @@
  * and open the template in the editor.
  */
 
-package com.jilk.ros.rosbridge;
+package com.jilk.ros.rosbridge.implementation;
 
+import com.jilk.ros.rosbridge.MessageHandler;
 import java.util.HashMap;
 import java.util.Map;
-import com.jilk.ros.message.MessageType;
 import com.jilk.ros.message.Message;
 
 /**
@@ -18,6 +18,7 @@ public class Registry {
     private static Map<String, String> topics = new HashMap<String, String>();
     private static Map<String, String> serviceArgs = new HashMap<String, String>();
     private static Map<String, String> serviceResults = new HashMap<String, String>();
+    private static Map<String, MessageHandler> handlers = new HashMap<String, MessageHandler>();
     
     public static void registerTopic(String topic, Class messageClass) {
         register(topics, topic, messageClass);
@@ -43,9 +44,17 @@ public class Registry {
         return lookup(serviceResults, service);
     }
     
+    public static void registerHandler(String key, MessageHandler handler) {
+        handlers.put(key, handler);
+    }
+    
+    public static MessageHandler lookupHandler(String key) {
+        return handlers.get(key);
+    }
+    
     private static void register(Map<String, String> registry, String key, Class messageClass) {
         Message.register(messageClass);
-        registry.put(key, ((MessageType) messageClass.getAnnotation(MessageType.class)).string());
+        registry.put(key, Message.getMessageType(messageClass));
     }
     
     private static String lookup(Map<String, String> registry, String key) {

@@ -11,5 +11,5 @@ package com.jilk.ros.message;
  */
 @MessageType(string = "rosgraph_msgs/Clock")
 public class Clock extends Message {
-    public TimePrimitive data;
+    public TimePrimitive clock;
 }

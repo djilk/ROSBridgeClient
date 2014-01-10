@@ -22,7 +22,7 @@ public abstract class Message {
     public static void register(Class c) {
         try {
             typecheck(c);
-            String messageString = ((MessageType) c.getAnnotation(MessageType.class)).string();
+            String messageString = getMessageType(c);
             Class existingClass = messageClasses.get(messageString);
             if (existingClass != null && !existingClass.equals(c))
                 throw new MessageException("Message String \'" + messageString +
@@ -40,6 +40,10 @@ public abstract class Message {
         return messageClasses.get(messageString);
     }
     
+    public static String getMessageType(Class c) {
+        return ((MessageType) c.getAnnotation(MessageType.class)).string();
+    }
+    
     // Could probably do more checking here, but not sure what right now
     private static void typecheck(Class c) throws MessageException {
         
@@ -49,7 +53,7 @@ public abstract class Message {
                     "\' does not extend Message");
 
         // Must have the MessageType annotation
-        if (c.getAnnotation(MessageType.class) == null)
+        if (getMessageType(c) == null)
             throw new MessageException("Class \'" + c.getName() +
                     "\' is missing the MessageType annotation");
                 

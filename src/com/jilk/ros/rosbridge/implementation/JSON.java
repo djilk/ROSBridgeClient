@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package com.jilk.ros.rosbridge;
+package com.jilk.ros.rosbridge.implementation;
 
 import org.json.simple.*;
 import org.json.simple.parser.*;
@@ -131,7 +131,7 @@ public class JSON {
                     Object value = convertElementToField(lookup, fc, f);
                     f.set(result, value);
                 }
-            }            
+            }      
             return result;
         }
         catch (Exception ex) {
@@ -260,9 +260,9 @@ public class JSON {
         Publish p = new Publish();
         p.topic = "/clock";
         Clock c = new Clock();
-        c.data = new TimePrimitive();
-        c.data.secs = 1000;
-        c.data.nsecs = 999999999;
+        c.clock = new TimePrimitive();
+        c.clock.secs = 1000;
+        c.clock.nsecs = 999999999;
         p.msg = c;
         
         System.out.println("Publish Operation");
@@ -281,8 +281,7 @@ public class JSON {
         t1.testInt = 77;
         t1.testDouble = 2.71828;
         t1.testShortArray = new short[] {1, 2, 3, 4};
-        CallService cs = new CallService("/srv");
-        cs.args = t1;
+        CallService cs = new CallService("/srv", t1);
         
         System.out.println("CallService Operation");
         cs.print();
@@ -308,6 +307,5 @@ public class JSON {
         public String mySubString;
         public boolean[] myBooleanArray;
         public boolean[][] myBoolean2DArray;
-    }
-        
+    }    
 }

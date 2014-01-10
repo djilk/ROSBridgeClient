@@ -10,7 +10,8 @@ import com.jilk.ros.rosbridge.indication.Indicated;
 import com.jilk.ros.rosbridge.indication.Indicate;
 import com.jilk.ros.message.MessageType;
 import com.jilk.ros.message.Message;
-import com.jilk.ros.rosbridge.Registry;
+import com.jilk.ros.rosbridge.implementation.Registry;
+import com.jilk.ros.rosbridge.MessageHandler;
 
 
 /**
@@ -19,6 +20,7 @@ import com.jilk.ros.rosbridge.Registry;
  */
 @MessageType(string = "publish")
 public class Publish extends Operation {
+    
     @Indicator public String topic;
     @Indicated public Message msg;
     

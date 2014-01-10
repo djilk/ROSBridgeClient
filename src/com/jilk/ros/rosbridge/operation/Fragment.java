@@ -5,7 +5,6 @@
 
 package com.jilk.ros.rosbridge.operation;
 
-import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
 
 /**
