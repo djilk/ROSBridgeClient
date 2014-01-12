@@ -10,6 +10,6 @@ import com.jilk.ros.message.Message;
  *
  * @author david_000
  */
-public interface MessageHandler {
-    public void handle(String id, Message message);
+public interface MessageHandler<T extends Message> {
+    public void onMessage(String id, T message);
 }

@@ -42,11 +42,14 @@ public class ROSBridgeClient {
         catch (InterruptedException ex) {}
     }
     
+    public void send(Operation operation) {
+        client.send(operation);
+    }
+    
     public void subscribe(String topic, MessageHandler handler, Class type) {
         Registry.registerTopic(topic, type);
         Registry.registerHandler(topic, handler);
-        Subscribe s = new Subscribe(topic, Message.getMessageType(type));
-        client.send(s);
+        send(new Subscribe(topic, Message.getMessageType(type)));
     }
     
     public void unsubscribe(String topic) {
@@ -54,29 +57,24 @@ public class ROSBridgeClient {
         // also need to handle race conditions in incoming message handler
         //    so that once unsubscribe has happened the handler gets no more
         //    messages
-        Unsubscribe u = new Unsubscribe(topic);
-        client.send(u);
+        send(new Unsubscribe(topic));
     }
     
     public void call(String service, Message data, MessageHandler handler, Class type) {
         Registry.registerServiceResults(service, type);
         Registry.registerHandler(service, handler);
-        CallService c = new CallService(service, data);        
-        client.send(c);
+        send(new CallService(service, data));        
     }
     
     public void advertise(String topic, Class type) {
-        Advertise a = new Advertise(topic, Message.getMessageType(type));
-        client.send(a);
+        send(new Advertise(topic, Message.getMessageType(type)));
     }
     
     public void publish(String topic, Message data) {
-        Publish p = new Publish(topic, data);
-        client.send(p);
+        send(new Publish(topic, data));
     }
     
     public void unadvertise(String topic) {     
-        Unadvertise u = new Unadvertise(topic);
-        client.send(u);
+        send(new Unadvertise(topic));
     }
 }

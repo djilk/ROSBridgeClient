@@ -62,7 +62,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         // later we will add clauses for Fragment, PNG, and Status. When rosbridge has it, we'll have one for service requests.
 
         if (handlerKey != null)
-            Registry.lookupHandler(handlerKey).handle(operation.id, msg);
+            Registry.lookupHandler(handlerKey).onMessage(operation.id, msg);
         else operation.print();
     }
        
