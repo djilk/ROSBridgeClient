@@ -29,9 +29,4 @@ public class Publish extends Operation {
         this.topic = topic;
         this.msg = msg;
     }
-    
-    @Indicate
-    public Class indicate(String s) {
-        return Message.lookup(Registry.lookupTopic(s));
-    }
 }

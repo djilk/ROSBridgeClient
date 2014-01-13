@@ -7,7 +7,6 @@ package com.jilk.ros.rosbridge.operation;
 
 import com.jilk.ros.message.MessageType;
 import com.jilk.ros.message.Message;
-import com.jilk.ros.rosbridge.implementation.Registry;
 import com.jilk.ros.rosbridge.indication.*;
 
 /**
@@ -24,9 +23,4 @@ public class ServiceResponse extends Operation {
     public ServiceResponse(String service) {
         this.service = service;
     }    
-    
-    @Indicate
-    public static Class indicate(String s) {
-        return Message.lookup(Registry.lookupServiceResults(s));
-    }
 }

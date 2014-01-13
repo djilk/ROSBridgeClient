@@ -28,9 +28,4 @@ public class CallService extends Operation {
         this.service = service;
         this.args = args;
     }    
-    
-    @Indicate
-    public Class indicate(String s) {
-        return Message.lookup(Registry.lookupServiceArgs(s));
-    }
 }

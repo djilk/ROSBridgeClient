@@ -21,9 +21,4 @@ public class Wrapper extends Operation {
     @Indicated public Operation msg;
     
     public Wrapper() {}
-
-    @Indicate
-    public Class indicate(String s) {
-        return Message.lookup(s);
-    }   
 }

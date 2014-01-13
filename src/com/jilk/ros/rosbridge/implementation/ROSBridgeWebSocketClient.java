@@ -13,6 +13,7 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import com.jilk.ros.rosbridge.operation.Operation;
 import com.jilk.ros.message.Message;
+import com.jilk.ros.rosbridge.MessageHandler;
 import com.jilk.ros.rosbridge.operation.Publish;
 import com.jilk.ros.rosbridge.operation.ServiceResponse;
 
@@ -21,9 +22,14 @@ import com.jilk.ros.rosbridge.operation.ServiceResponse;
  * @author David J. Jilk
  */
 public class ROSBridgeWebSocketClient extends WebSocketClient {
+    private Registry<Class> classes;
+    private Registry<MessageHandler> handlers;
     
     ROSBridgeWebSocketClient(URI serverURI) {
         super(serverURI);
+        classes = new Registry<Class>();
+        handlers = new Registry<MessageHandler>();
+        Operation.initialize(classes);  // note, this ensures that the Message Map is initialized too
     }
     
     public static ROSBridgeWebSocketClient create(String URIString) {
@@ -46,23 +52,23 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         System.out.println("Received message: " + message);
-        Operation operation = Operation.toOperation(message);
+        Operation operation = Operation.toOperation(message, classes);
+        MessageHandler handler = null;
         Message msg = null;
-        String handlerKey = null;
         if (operation instanceof Publish) {
             Publish p = (Publish) operation;
-            handlerKey = p.topic;
+            handler = handlers.lookup(Publish.class, p.topic);
             msg = p.msg;
         }
         else if (operation instanceof ServiceResponse) {
             ServiceResponse r = ((ServiceResponse) operation);
-            handlerKey = r.service;
+            handler = handlers.lookup(ServiceResponse.class, r.service);
             msg = r.values;
         }
         // later we will add clauses for Fragment, PNG, and Status. When rosbridge has it, we'll have one for service requests.
 
-        if (handlerKey != null)
-            Registry.lookupHandler(handlerKey).onMessage(operation.id, msg);
+        if (handler != null)
+            handler.onMessage(operation.id, msg);
         else operation.print();
     }
        
@@ -81,5 +87,20 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     
     public void send(Operation operation) {
         send(operation.toJSON());
+    }
+    
+    public void register(Class<? extends Operation> c,
+            String s,
+            Class<? extends Message> m,
+            MessageHandler h) {
+        Message.register(m, classes.get(Message.class));
+        classes.register(c, s, m);
+        if (h != null)
+            handlers.register(c, s, h);
+    }
+    
+    public void unregister(Class<? extends Operation> c, String s) {
+        handlers.unregister(c, s);
+        // Note that there is no concept of unregistering a class - it can get replaced is all
     }
 }

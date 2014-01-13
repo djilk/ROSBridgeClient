@@ -19,7 +19,6 @@ public class ROSBridgeClient {
     ROSBridgeWebSocketClient client;
     
     public ROSBridgeClient(String uriString) {
-        Operation.initialize();
         this.uriString = uriString;
     }
     
@@ -46,9 +45,21 @@ public class ROSBridgeClient {
         client.send(operation);
     }
     
-    public void subscribe(String topic, MessageHandler handler, Class type) {
-        Registry.registerTopic(topic, type);
-        Registry.registerHandler(topic, handler);
+    public void register(Class<? extends Operation> c,
+            String s,
+            Class<? extends Message> m,
+            MessageHandler h) {
+        client.register(c, s, m, h);
+    }
+
+    public void unregister(Class<? extends Operation> c, String s) {
+        client.unregister(c, s);
+    }
+    
+    public void subscribe(String topic, MessageHandler handler, Class<? extends Message> type) {
+        register(Publish.class, topic, type, handler);
+        //Registry.registerTopic(topic, type);
+        //Registry.registerHandler(topic, handler);
         send(new Subscribe(topic, Message.getMessageType(type)));
     }
     
@@ -61,12 +72,14 @@ public class ROSBridgeClient {
     }
     
     public void call(String service, Message data, MessageHandler handler, Class type) {
-        Registry.registerServiceResults(service, type);
-        Registry.registerHandler(service, handler);
+        register(ServiceResponse.class, service, type, handler);
+        //Registry.registerServiceResults(service, type);
+        //Registry.registerHandler(service, handler);
         send(new CallService(service, data));        
     }
     
     public void advertise(String topic, Class type) {
+        register(Publish.class, topic, type, null);
         send(new Advertise(topic, Message.getMessageType(type)));
     }
     

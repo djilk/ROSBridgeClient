@@ -19,15 +19,17 @@ import com.jilk.ros.rosbridge.operation.*;
  */
 public class Topic<T extends Message> extends LinkedBlockingQueue<T> implements MessageHandler {
     private String topic;
-    private String type;
+    private Class<T> type;
+    private String messageType;
     private MessageHandler<T> handler;
     private ROSBridgeClient client;
     
     public Topic(String topic, Class<T> type, ROSBridgeClient client) {
         this.topic = topic;
-        this.type = Message.getMessageType(type);
         this.client = client;
-        Registry.registerTopic(topic, type);        
+        this.type = type;
+        messageType = Message.getMessageType(type);
+        //Registry.registerTopic(topic, type);        
     }
     
     @Override
@@ -42,20 +44,21 @@ public class Topic<T extends Message> extends LinkedBlockingQueue<T> implements 
     }
     
     public void subscribe() {
-        Registry.registerHandler(topic, this);
-        send(new Subscribe(topic, type));
+        client.register(Publish.class, topic, type, this);
+        //Registry.registerHandler(topic, this);
+        send(new Subscribe(topic, messageType));
     }
     
     public void unsubscribe() {
-        // probably need to have an "unregister" mechanism
-        // also need to handle race conditions in incoming message handler
+        // need to handle race conditions in incoming message handler
         //    so that once unsubscribe has happened the handler gets no more
         //    messages
+        client.unregister(Publish.class, topic);
         send(new Unsubscribe(topic));        
     }
     
     public void advertise() {
-        send(new Advertise(topic, type));
+        send(new Advertise(topic, messageType));
     }
     
     public void publish(T message) {

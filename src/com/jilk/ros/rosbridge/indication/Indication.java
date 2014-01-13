@@ -39,7 +39,8 @@ public class Indication {
         }
         return result;
     }
-    
+
+    /*
     public static Class getIndication(Object o, String s) {
         Class c = o.getClass();
         Class result = null;
@@ -63,4 +64,5 @@ public class Indication {
         }
         return result;
     }
+    */
 }

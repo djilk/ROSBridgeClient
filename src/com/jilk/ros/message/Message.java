@@ -8,7 +8,6 @@ package com.jilk.ros.message;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.HashMap;
 
 
 /**
@@ -17,18 +16,9 @@ import java.util.HashMap;
  */
 @MessageType(string = "message")
 public abstract class Message {
-    private static Map<String, Class> messageClasses = new HashMap<String, Class>();
-    
-    public static void register(Class c) {
+    public static void register(Class c, Map<String, Class> messageClasses) {
         try {
-            typecheck(c);
-            String messageString = getMessageType(c);
-            Class existingClass = messageClasses.get(messageString);
-            if (existingClass != null && !existingClass.equals(c))
-                throw new MessageException("Message String \'" + messageString +
-                    "\' is assigned to two different classes (" +
-                        c.getName() + " and " + existingClass.getName() + ")");
-            messageClasses.put(messageString, c);
+            typecheck(c, messageClasses);
         }
         catch (MessageException ex) {
             // should be changed to be a hooked method to give library user control
@@ -36,16 +26,21 @@ public abstract class Message {
         }
     }
     
-    public static Class lookup(String messageString) {
-        return messageClasses.get(messageString);
-    }
-    
     public static String getMessageType(Class c) {
         return ((MessageType) c.getAnnotation(MessageType.class)).string();
     }
     
     // Could probably do more checking here, but not sure what right now
-    private static void typecheck(Class c) throws MessageException {
+    private static void typecheck(Class c, Map<String, Class> messageClasses) throws MessageException {
+        
+        // Must register the class and not have duplicate
+        String messageString = getMessageType(c);
+        Class existingClass = messageClasses.get(messageString);
+        if (existingClass != null && !existingClass.equals(c))
+            throw new MessageException("Message String \'" + messageString +
+                "\' is assigned to two different classes (" +
+                    c.getName() + " and " + existingClass.getName() + ")");
+        messageClasses.put(messageString, c);
         
         // Must inherit from Message
         if (!Message.class.isAssignableFrom(c))
@@ -65,10 +60,10 @@ public abstract class Message {
             if (fc.isArray()) {
                 Class ac = fc.getComponentType(); 
                 if (!isPrimitive(ac))
-                    typecheck(ac);
+                    typecheck(ac, messageClasses);
             }
             else if (!isPrimitive(fc))
-                typecheck(fc);
+                typecheck(fc, messageClasses);
         }
     }
     

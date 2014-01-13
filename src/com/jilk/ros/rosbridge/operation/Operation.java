@@ -8,6 +8,7 @@ package com.jilk.ros.rosbridge.operation;
 import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
 import com.jilk.ros.rosbridge.implementation.JSON;
+import com.jilk.ros.rosbridge.implementation.Registry;
 
 
 /**
@@ -22,7 +23,7 @@ public class Operation extends Message {
     public String op;
     public String id;
     
-    Operation() {
+    public Operation() {
         this.op = getMessageType(getClass());
         this.id = nextId();
     }
@@ -37,30 +38,35 @@ public class Operation extends Message {
         return JSON.toJSON(this);
     }
     
-    public static Operation toOperation(String json) {
-        return ((Wrapper) JSON.toMessage(json, Wrapper.class)).msg;
+    public static Operation toOperation(String json, Registry<Class> registry) {
+        return ((Wrapper) JSON.toMessage(json, Wrapper.class, registry)).msg;
     }
     
-    // Operation subclasses are registered directly rather than through the
-    //     passive static initializer approach, because they can be at the root
-    //     of an inbound message and otherwise we wouldn't find them.
-    public static void initialize() {
+    public static void initialize(Registry<Class> registry) {
         if (!initialized) {
-            Message.register(Advertise.class);
-            Message.register(Authenticate.class);
-            Message.register(CallService.class);
-            Message.register(Fragment.class);
-            Message.register(Operation.class);
-            Message.register(PNG.class);
-            Message.register(Publish.class);
-            Message.register(ServiceResponse.class);
-            Message.register(SetStatusLevel.class);
-            Message.register(Status.class);
-            Message.register(Subscribe.class);
-            Message.register(Unadvertise.class);
-            Message.register(Unsubscribe.class);
-            Message.register(Wrapper.class);
+            initClass(registry, Advertise.class);
+            initClass(registry, Authenticate.class);
+            initClass(registry, CallService.class);
+            initClass(registry, Fragment.class);
+            initClass(registry, Operation.class);
+            initClass(registry, PNG.class);
+            initClass(registry, Publish.class);
+            initClass(registry, ServiceResponse.class);
+            initClass(registry, SetStatusLevel.class);
+            initClass(registry, Status.class);
+            initClass(registry, Subscribe.class);
+            initClass(registry, Unadvertise.class);
+            initClass(registry, Unsubscribe.class);
+            initClass(registry, Wrapper.class);
+            
+            registry.register(Wrapper.class, Message.getMessageType(Publish.class), Publish.class);
+            registry.register(Wrapper.class, Message.getMessageType(CallService.class), CallService.class);
+            registry.register(Wrapper.class, Message.getMessageType(ServiceResponse.class), ServiceResponse.class);
             initialized = true;
         }
     }    
+    
+    private static void initClass(Registry<Class> registry, Class<? extends Message> c) {
+        registry.register(Message.class, Message.getMessageType(c), c);
+    }
 }
