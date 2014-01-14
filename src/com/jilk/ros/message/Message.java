@@ -18,7 +18,18 @@ import java.util.Map;
 public abstract class Message {
     public static void register(Class c, Map<String, Class> messageClasses) {
         try {
-            typecheck(c, messageClasses);
+            typecheck(c);
+
+            // Must register the class and not have duplicate
+            // This is not recursive because only the top level message class
+            //   needs to be determined from the string - others are top-down.
+            String messageString = getMessageType(c);
+            Class existingClass = messageClasses.get(messageString);
+            if (existingClass != null && !existingClass.equals(c))
+                throw new MessageException("Message String \'" + messageString +
+                    "\' is assigned to two different classes (" +
+                        c.getName() + " and " + existingClass.getName() + ")");
+            messageClasses.put(messageString, c);        
         }
         catch (MessageException ex) {
             // should be changed to be a hooked method to give library user control
@@ -31,16 +42,7 @@ public abstract class Message {
     }
     
     // Could probably do more checking here, but not sure what right now
-    private static void typecheck(Class c, Map<String, Class> messageClasses) throws MessageException {
-        
-        // Must register the class and not have duplicate
-        String messageString = getMessageType(c);
-        Class existingClass = messageClasses.get(messageString);
-        if (existingClass != null && !existingClass.equals(c))
-            throw new MessageException("Message String \'" + messageString +
-                "\' is assigned to two different classes (" +
-                    c.getName() + " and " + existingClass.getName() + ")");
-        messageClasses.put(messageString, c);
+    private static void typecheck(Class c) throws MessageException {
         
         // Must inherit from Message
         if (!Message.class.isAssignableFrom(c))
@@ -60,10 +62,10 @@ public abstract class Message {
             if (fc.isArray()) {
                 Class ac = fc.getComponentType(); 
                 if (!isPrimitive(ac))
-                    typecheck(ac, messageClasses);
+                    typecheck(ac);
             }
             else if (!isPrimitive(fc))
-                typecheck(fc, messageClasses);
+                typecheck(fc);
         }
     }
     

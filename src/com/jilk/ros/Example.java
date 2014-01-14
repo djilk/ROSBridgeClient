@@ -26,13 +26,18 @@ public class Example implements MessageHandler {
     }
     
     public static void main(String[] args) {        
+        testTopic();
+        if (true) return;
+        
+        
         ROSBridgeClient client = new ROSBridgeClient("ws://162.243.238.80:9090");
         client.connect();
         
+        /*
         client.subscribe("/clock", new Example(), Clock.class);
         try {Thread.sleep(20000);} catch(InterruptedException ex) {}
+        */
         
-        /*
         client.advertise("/dave", Clock.class);
         Clock c = new Clock();
         c.clock = new TimePrimitive();
@@ -42,16 +47,16 @@ public class Example implements MessageHandler {
         c.clock.nsecs++;
         client.publish("/dave", c);
         client.unadvertise("/dave");
-        */
+        
         client.disconnect();
     }            
     
-    // 1/11/14: have not run this for test yet.
     public static void testTopic() {
         ROSBridgeClient client = new ROSBridgeClient("ws://162.243.238.80:9090");
         client.connect();
         Topic<Clock> clockTopic = new Topic<Clock>("/clock", Clock.class, client);
         clockTopic.subscribe();
+        try {Thread.sleep(20000);} catch(InterruptedException ex) {}
         Clock cl = null;
         try {
             cl = clockTopic.take(); // just gets one
