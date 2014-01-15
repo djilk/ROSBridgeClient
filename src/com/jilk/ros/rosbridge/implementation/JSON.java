@@ -13,10 +13,8 @@ import java.lang.reflect.Field;
 
 import com.jilk.ros.message.Message;
 import com.jilk.ros.rosbridge.indication.Indication;
+import com.jilk.ros.rosbridge.operation.Wrapper;
 
-// temporary - for tests
-import com.jilk.ros.rosbridge.operation.*;
-import com.jilk.ros.message.*;
 
 // The slightly crazy abstractions here are designed to isolate knowledge of
 //    the JSON library and data types from the Operation details of rosbridge.
@@ -26,7 +24,14 @@ import com.jilk.ros.message.*;
 //    protocol to be encapsulated in the Operation and its subclasses rather
 //    than in a module that is essentially about serialization.
 //
-//    Unfortunately the hierarchical Message abstraction is a bit broken at the
+//    Unfortunately the hierarchical Message abstraction is a bit broken 
+//    at the top level. Beginning at the actual operation (e.g., Publish), the
+//    types of the fields are determined either by the fields themselves or by
+//    an indicator.  However, the type of the operation itself is not determined
+//    this way, because the indicator is in the object itself, which means it
+//    would have to be created before its type is known. Rather than build in
+//    exceptions, I elected to create a "Wrapper" operation type that simply
+//    wraps the concrete operation and copies its "op" field.
 //    
 
 /**
@@ -35,17 +40,43 @@ import com.jilk.ros.message.*;
  */
 public class JSON {
 
+    /**
+     * Translates a Message recursively into JSON. Normally the Message is also an
+     * Operation, but it does not have to be. The caller constructs a complete
+     * message using @Operation and @Message types. This includes situations
+     * where one or more fields are marked to be turned into arrays, using @AsArray. 
+     * @param m  the @Message object to be recursively translated.
+     * @return   the complete JSON string.
+     */
     public static String toJSON(Message m) {
-        JSONObject jo = convertObjectToJSONObject(m);
-        return jo.toJSONString();
+        JSONObject jo = convertObjectToJSONObject(m); // Object to JSON-Simple
+        return jo.toJSONString();                     // JSON-Simple to string
     }
     
+    /**
+     * Translates JSON into a hierarchical Operation/Message structure.
+     * This includes handling fields that are @Indicated and @AsArray. If the
+     * @Class parameter is a @Wrapper, this is a special case whereby the
+     * object is wrapped to create a consistent hierarchy. 
+     * @param json  the source JSON string
+     * @param c     the top level class of the JSON. Normally @Wrapper
+     * @param r     the @Registry containing topic registrations
+     * @return      the fully instantiated message hierarchy represented
+     *              by the JSON string.
+     */
     public static Message toMessage(String json, Class c, Registry<Class> r) {
-        JSONObject joUnwrapped = convertStringToJSONObject(json);
-        JSONObject jo = wrap(joUnwrapped, c);  // a hack to make the hierarchy homogeneous
-        return convertJSONObjectToMessage(jo, c, r);
+        JSONObject joUnwrapped = convertStringToJSONObject(json); // String to JSON-Simple
+        JSONObject jo = joUnwrapped;
+        if (Wrapper.class.isAssignableFrom(c))
+            jo = wrap(joUnwrapped, c);                            // wrap: a hack to make the hierarchy homogeneous
+        return convertJSONObjectToMessage(jo, c, r);              // JSON-Simple to Message
     }
     
+    // *** Create JSON from Messages *** //
+    
+    // Translate the object into a JSON-Simple object, field-by-field,
+    //   recursively via convertElementToJSON.
+    //   except for the case where AsArray is indicated
     private static JSONObject convertObjectToJSONObject(Object o) {
         JSONObject result = new JSONObject();
         for (Field f : o.getClass().getFields()) {
@@ -61,6 +92,8 @@ public class JSON {
         return result;
     }
     
+    // Convert an array type to a JSON-Simple array, element-by-element,
+    //    recursively via convertElementToJSON.
     private static JSONArray convertArrayToJSONArray(Object array) {
         JSONArray result = new JSONArray();
         for (int i = 0; i < Array.getLength(array); i++) {
@@ -73,6 +106,9 @@ public class JSON {
         return result;
     }
     
+    // For AsArray objects, convert the object to a JSON-Simple array
+    //     NOTE: This relies on later versions of the JDK providing 
+    //           the fields in order.
     private static JSONArray convertObjectToJSONArray(Object o) {
         JSONArray result = new JSONArray();
         for (Field f : o.getClass().getFields()) {
@@ -85,6 +121,7 @@ public class JSON {
         return result;
     }
             
+    // Convert the individual field or array element items recursively
     private static Object convertElementToJSON(Object elementObject) {
         Class elementClass = elementObject.getClass();
         Object resultObject;
@@ -97,6 +134,22 @@ public class JSON {
         return resultObject;
     }
     
+    // This is just to buffer the code from the exception. Better error
+    //    handling needed here.
+    private static Object getFieldObject(Field f, Object o) {
+        Object fo = null;
+        try {
+            fo = f.get(o);
+        }
+        catch (IllegalAccessException ex) {
+            ex.printStackTrace();
+        }
+        return fo;
+    }        
+    
+    // *** Create Messages from JSON *** //
+    
+    // Use the JSON-simple parser to create the JSON-Simple object
     private static JSONObject convertStringToJSONObject(String json) {
         JSONObject result = null;
         StringReader r = new StringReader(json);
@@ -112,6 +165,8 @@ public class JSON {
     }
     
     // A bit of a hack to create a consistent hierarchy with jsonbridge operations
+    // At least it does not depend on any specific field names, it just copies the 
+    // Indicator and Indicated fields.
     private static JSONObject wrap(JSONObject jo, Class c) {
         JSONObject result = new JSONObject();
         String indicatorName = Indication.getIndicatorName(c);
@@ -121,6 +176,8 @@ public class JSON {
         return result;
     }
             
+    // Convert the JSON-Simple object to the indicated message, field-by-field
+    //    recursively via convertElementToField.
     private static Message convertJSONObjectToMessage(JSONObject jo, Class c, Registry<Class> r) {
         try {
             Message result = (Message) c.newInstance();
@@ -140,22 +197,8 @@ public class JSON {
         }        
     }
 
-    private static Object convertElementToField(Object element, Class fc, Field f, Registry<Class> r) {
-        Object value;
-        if (element.getClass().equals(JSONObject.class)) {
-            value = convertJSONObjectToMessage((JSONObject) element, fc, r);
-        }
-        else if (element.getClass().equals(JSONArray.class)) {
-            if (Indication.asArray(f))
-                value = convertJSONArrayToMessage((JSONArray) element, fc, r);
-            else value = convertJSONArrayToArray((JSONArray) element, fc, r);
-        }
-        else
-            value = convertJSONPrimitiveToPrimitive(element, fc);
-         
-       return value;        
-    }
-    
+    // Convert the JSON-Simple array to the indicated message, element-by-element
+    //    recursively via convertElementToField.
     private static Object convertJSONArrayToArray(JSONArray ja, Class c, Registry<Class> r) {
         Object result = Array.newInstance(c, ja.size());
         for (int i = 0; i < ja.size(); i++) {
@@ -175,6 +218,10 @@ public class JSON {
         return result;
     }
     
+    // Convert a JSON-Simple array to a Message, field-by-field of the Message,
+    //     element-by-element of the array, recursively via convertElementToField.
+    //     NOTE: This relies on later versions of the JDK providing 
+    //           the fields in order.
     private static Message convertJSONArrayToMessage(JSONArray ja, Class c, Registry<Class> r) {
         try {
             Message result = (Message) c.newInstance();
@@ -194,6 +241,24 @@ public class JSON {
             ex.printStackTrace();
             return null;
         }        
+    }
+
+    // Convert an individual array or object element to a field in the Message,
+    //    recursively, and applying AsArray if needed.
+    private static Object convertElementToField(Object element, Class fc, Field f, Registry<Class> r) {
+        Object value;
+        if (element.getClass().equals(JSONObject.class)) {
+            value = convertJSONObjectToMessage((JSONObject) element, fc, r);
+        }
+        else if (element.getClass().equals(JSONArray.class)) {
+            if (Indication.asArray(f))
+                value = convertJSONArrayToMessage((JSONArray) element, fc, r);
+            else value = convertJSONArrayToArray((JSONArray) element, fc, r);
+        }
+        else
+            value = convertJSONPrimitiveToPrimitive(element, fc);
+         
+       return value;        
     }
     
     // Note that this is not checking ranges
@@ -217,6 +282,11 @@ public class JSON {
         return result;
     }
     
+
+    // Determine the target class of a field in the object or array, based
+    //    directly on the field's type, or using the Indicator if applicable,    
+    //    The Indicator field only provides the topic/service, so we have to look
+    //    up the Class in the registry.
     public static Class getFieldClass(Message parent, JSONObject jo, Field f, Registry<Class> r) {
         Class fc;
         fc = f.getType();
@@ -228,90 +298,5 @@ public class JSON {
             fc = r.lookup(parent.getClass(),
                     (String) jo.get(Indication.getIndicatorName(parent.getClass())));
         return fc;
-    }    
-    
-    private static Object getFieldObject(Field f, Object o) {
-        Object fo = null;
-        try {
-            fo = f.get(o);
-        }
-        catch (IllegalAccessException ex) {
-            ex.printStackTrace();
-        }
-        return fo;
-    }
-    
-   public static void main(String[] args) {
-        Registry<Class> registry = new Registry<Class>();
-       
-        TestClass t = new TestClass();
-        t.myInt = 99;
-        t.myLong = 100000000;
-        t.myDouble = 3.14159;
-        t.myString = "Test String";
-        t.myTS = new TestSubClass();
-        t.myTS.mySubString = "Test Sub String";
-        t.myTS.myBooleanArray = new boolean[] {false, true};
-        t.myTS.myBoolean2DArray = new boolean[][] {new boolean[] {true, true}, new boolean[] {false, false}};
-        System.out.println("Test Class");
-        t.print();
-        System.out.println("Test Class as JSON");
-        String json = toJSON(t);
-        System.out.println(json);
-
-        Operation.initialize(registry);
-        Message.register(Clock.class, registry.get(Message.class));
-        registry.register(Publish.class, "/clock", Clock.class);
-        Publish p = new Publish();
-        p.topic = "/clock";
-        Clock c = new Clock();
-        c.clock = new TimePrimitive();
-        c.clock.secs = 1000;
-        c.clock.nsecs = 999999999;
-        p.msg = c;
-        
-        System.out.println("Publish Operation");
-        p.print();
-        json = toJSON(p);
-        System.out.println("Publish Operation as JSON");
-        System.out.println(json);
-        
-        System.out.println("Publish Operation converted back from JSON");
-        Message p2 = Operation.toOperation(json, registry);
-        p2.print();
-        
-        Message.register(Test.class, registry.get(Message.class));
-        registry.register(CallService.class, "/srv", Test.class);
-        Test t1 = new Test();
-        t1.testName = "Test Name";
-        t1.testInt = 77;
-        t1.testDouble = 2.71828;
-        t1.testShortArray = new short[] {1, 2, 3, 4};
-        CallService cs = new CallService("/srv", t1);
-        
-        System.out.println("CallService Operation");
-        cs.print();
-        json = toJSON(cs);
-
-        System.out.println("CallService Operation as JSON");
-        System.out.println(json);
-
-        System.out.println("CallService Operation converted back from JSON");
-        Message cs2 = Operation.toOperation(json, registry);
-        cs2.print();        
-    }
-    
-    public static class TestClass extends Message {
-        public long myInt;
-        public long myLong;
-        public double myDouble;
-        public String myString;
-        public TestSubClass myTS;
-    }
-    
-    public static class TestSubClass {
-        public String mySubString;
-        public boolean[] myBooleanArray;
-        public boolean[][] myBoolean2DArray;
-    }    
+    }            
 }
