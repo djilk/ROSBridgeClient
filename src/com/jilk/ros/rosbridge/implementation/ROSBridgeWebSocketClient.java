@@ -51,7 +51,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-        System.out.println("Received message: " + message);
+        //System.out.println("Received message: " + message);
         Operation operation = Operation.toOperation(message, classes);
         MessageHandler handler = null;
         Message msg = null;
@@ -69,7 +69,10 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
 
         if (handler != null)
             handler.onMessage(operation.id, msg);
-        else operation.print();
+        else {
+            System.out.println("No handler for message id# " + operation.id);
+            //operation.print();
+        }
     }
        
     @Override
