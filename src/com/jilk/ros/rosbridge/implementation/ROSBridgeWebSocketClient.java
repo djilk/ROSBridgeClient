@@ -51,8 +51,11 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-        //System.out.println("Received message: " + message);
+        //System.out.println("ROSBridgeWebSocketClient.onMessage (message): " + message);
         Operation operation = Operation.toOperation(message, classes);
+        //System.out.println("ROSBridgeWebSocketClient.onMessage (operation): ");
+        //operation.print();
+        
         MessageHandler handler = null;
         Message msg = null;
         if (operation instanceof Publish) {
@@ -67,6 +70,11 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         }
         // later we will add clauses for Fragment, PNG, and Status. When rosbridge has it, we'll have one for service requests.
 
+        // need to handle "result: null" possibility for ROSBridge service responses
+        // this is probably some sort of call to the operation for "validation." Do it
+        // as part of error handling.
+        
+        
         if (handler != null)
             handler.onMessage(operation.id, msg);
         else {

@@ -5,56 +5,58 @@
 
 package com.jilk.ros;
 
-import com.jilk.ros.message.Message;
 import com.jilk.ros.message.Clock;
-import com.jilk.ros.message.TimePrimitive;
-import com.jilk.ros.rosbridge.MessageHandler;
+import com.jilk.ros.rosapi.message.Empty;
+import com.jilk.ros.rosapi.message.Topics;
+import com.jilk.ros.rosapi.message.Topic;
+import com.jilk.ros.rosapi.message.Type;
+import com.jilk.ros.rosapi.message.MessageDetails;
+import com.jilk.ros.rosapi.message.TypeDef;
 import com.jilk.ros.rosbridge.ROSBridgeClient;
 
 /**
  *
  * @author David J. Jilk
  */
-public class Example implements MessageHandler {
+public class Example {
     
     public Example() {}
     
-    @Override
-    public void onMessage(String id, Message message) {
-        System.out.println("ROSBridgeExample received message, id#" + id);
-        message.print();
-    }
-    
     public static void main(String[] args) {        
-        testTopic();
-        if (true) return;
-        
-        
         ROSBridgeClient client = new ROSBridgeClient("ws://162.243.238.80:9090");
         client.connect();
-        
-        /*
-        client.subscribe("/clock", new Example(), Clock.class);
-        try {Thread.sleep(20000);} catch(InterruptedException ex) {}
-        */
-        
-        client.advertise("/dave", Clock.class);
-        Clock c = new Clock();
-        c.clock = new TimePrimitive();
-        c.clock.secs = 314159;
-        c.clock.nsecs = 271828;
-        client.publish("/dave", c);
-        c.clock.nsecs++;
-        client.publish("/dave", c);
-        client.unadvertise("/dave");
-        
+        //testTopic(client);
+        testService(client);
         client.disconnect();
     }            
     
-    public static void testTopic() {
-        ROSBridgeClient client = new ROSBridgeClient("ws://162.243.238.80:9090");
-        client.connect();
-        Topic<Clock> clockTopic = new Topic<Clock>("/clock", Clock.class, client);
+    public static void testService(ROSBridgeClient client) {
+        Service<Empty, Topics> topicService =
+                new Service<Empty, Topics>("/rosapi/topics", Empty.class, Topics.class, client);
+        Service<Topic, Type> typeService =
+                new Service<Topic, Type>("/rosapi/topic_type", Topic.class, Type.class, client);
+        Service<Type, MessageDetails> messageService =
+                new Service<Type, MessageDetails>("/rosapi/message_details", Type.class, MessageDetails.class, client);
+        try {
+            Topics topics = topicService.callBlocking(new Empty());
+            for (String topicString : topics.topics) {
+                Topic topic = new Topic();
+                topic.topic = topicString;
+                Type type = typeService.callBlocking(topic);
+                MessageDetails details = messageService.callBlocking(type);
+                System.out.println("Topic: " + topic.topic + " Type: " + type.type);
+                details.print();
+                System.out.println();
+            }
+            
+        }
+        catch (InterruptedException ex) {
+            System.out.println("testService: process was interrupted.");
+        }
+    }
+    
+    public static void testTopic(ROSBridgeClient client) {
+        com.jilk.ros.Topic<Clock> clockTopic = new com.jilk.ros.Topic<Clock>("/clock", Clock.class, client);
         clockTopic.subscribe();
         try {Thread.sleep(20000);} catch(InterruptedException ex) {}
         Clock cl = null;
@@ -68,6 +70,5 @@ public class Example implements MessageHandler {
         clockTopic.advertise();
         clockTopic.publish(cl);
         clockTopic.unadvertise();
-        client.disconnect();
     }
 }

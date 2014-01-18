@@ -179,6 +179,7 @@ public class JSON {
     // Convert the JSON-Simple object to the indicated message, field-by-field
     //    recursively via convertElementToField.
     private static Message convertJSONObjectToMessage(JSONObject jo, Class c, Registry<Class> r) {
+        //System.out.println("JSON.convertJSONObjectToMessage: " + jo.toJSONString());
         try {
             Message result = (Message) c.newInstance();
             for (Field f : c.getFields()) {
@@ -246,11 +247,14 @@ public class JSON {
     // Convert an individual array or object element to a field in the Message,
     //    recursively, and applying AsArray if needed.
     private static Object convertElementToField(Object element, Class fc, Field f, Registry<Class> r) {
+        //System.out.println("JSON.convertElementToField: " + f.getName() + " " + fc.getName());
         Object value;
         if (element.getClass().equals(JSONObject.class)) {
+            //System.out.println("JSON.convertElementToField: JSON Object " + ((JSONObject) element).toJSONString());
             value = convertJSONObjectToMessage((JSONObject) element, fc, r);
         }
         else if (element.getClass().equals(JSONArray.class)) {
+            //System.out.println("JSON.convertElementToField: JSON Array " + ((JSONArray) element).toJSONString());
             if (Indication.asArray(f))
                 value = convertJSONArrayToMessage((JSONArray) element, fc, r);
             else value = convertJSONArrayToArray((JSONArray) element, fc, r);
@@ -278,7 +282,6 @@ public class JSON {
             else if (c.equals(byte.class) || c.equals(Byte.class))
                 result = new Byte(((Number) o).byteValue());
         }
-        
         return result;
     }
     
@@ -292,11 +295,15 @@ public class JSON {
         fc = f.getType();
         if (fc.isArray())
             fc = f.getType().getComponentType();
-        if (Indication.isIndicated(f) && (jo != null))
+        if (Indication.isIndicated(f) && (jo != null)) {
             //fc = Indication.getIndication(parent,
             //        (String) jo.get(Indication.getIndicatorName(parent.getClass())));
             fc = r.lookup(parent.getClass(),
                     (String) jo.get(Indication.getIndicatorName(parent.getClass())));
+            //System.out.println("JSON.getFieldClass: parent class " + parent.getClass().getName() +
+            //        " Indicator: " + Indication.getIndicatorName(parent.getClass()) + 
+            //        " result: " + fc.getName());
+        }
         return fc;
     }            
 }

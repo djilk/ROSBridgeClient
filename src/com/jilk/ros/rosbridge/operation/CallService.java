@@ -7,7 +7,6 @@ package com.jilk.ros.rosbridge.operation;
 
 import com.jilk.ros.message.MessageType;
 import com.jilk.ros.message.Message;
-import com.jilk.ros.rosbridge.implementation.Registry;
 import com.jilk.ros.rosbridge.indication.*;
 
 

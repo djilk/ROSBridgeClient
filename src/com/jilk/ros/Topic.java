@@ -28,7 +28,6 @@ public class Topic<T extends Message> extends LinkedBlockingQueue<T> implements 
         this.client = client;
         this.type = type;
         messageType = Message.getMessageType(type);
-        //Registry.registerTopic(topic, type);        
     }
     
     @Override
@@ -44,7 +43,6 @@ public class Topic<T extends Message> extends LinkedBlockingQueue<T> implements 
     
     public void subscribe() {
         client.register(Publish.class, topic, type, this);
-        //Registry.registerHandler(topic, this);
         send(new Subscribe(topic, messageType));
     }
     

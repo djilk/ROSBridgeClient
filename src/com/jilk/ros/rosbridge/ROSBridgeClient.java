@@ -56,38 +56,4 @@ public class ROSBridgeClient {
         client.unregister(c, s);
     }
     
-    public void subscribe(String topic, MessageHandler handler, Class<? extends Message> type) {
-        register(Publish.class, topic, type, handler);
-        //Registry.registerTopic(topic, type);
-        //Registry.registerHandler(topic, handler);
-        send(new Subscribe(topic, Message.getMessageType(type)));
-    }
-    
-    public void unsubscribe(String topic) {
-        // probably need to have an "unregister" mechanism
-        // also need to handle race conditions in incoming message handler
-        //    so that once unsubscribe has happened the handler gets no more
-        //    messages
-        send(new Unsubscribe(topic));
-    }
-    
-    public void call(String service, Message data, MessageHandler handler, Class type) {
-        register(ServiceResponse.class, service, type, handler);
-        //Registry.registerServiceResults(service, type);
-        //Registry.registerHandler(service, handler);
-        send(new CallService(service, data));        
-    }
-    
-    public void advertise(String topic, Class type) {
-        register(Publish.class, topic, type, null);
-        send(new Advertise(topic, Message.getMessageType(type)));
-    }
-    
-    public void publish(String topic, Message data) {
-        send(new Publish(topic, data));
-    }
-    
-    public void unadvertise(String topic) {     
-        send(new Unadvertise(topic));
-    }
 }

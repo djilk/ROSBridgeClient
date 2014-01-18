@@ -16,7 +16,8 @@ import com.jilk.ros.rosbridge.indication.*;
 @MessageType(string = "service_response")
 public class ServiceResponse extends Operation {
     @Indicator public String service;
-    @Indicated @AsArray public Message values;
+    public boolean result;
+    @Indicated public Message values;
 
     public ServiceResponse() {}
     
