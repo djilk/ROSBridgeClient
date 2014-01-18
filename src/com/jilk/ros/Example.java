@@ -31,6 +31,27 @@ public class Example {
     }            
     
     public static void testService(ROSBridgeClient client) {
+        try {
+            System.out.println("Nodes");
+            for (String s : client.getNodes())
+                System.out.println("    " + s);
+            System.out.println("Topics");
+            for (String s : client.getTopics()) {
+                System.out.println(s + ":");
+                client.getTopicMessageDetails(s).print();
+            }
+            System.out.println("Services");
+            for (String s : client.getServices()) {
+                System.out.println(s + ":");
+                client.getServiceRequestDetails(s).print();
+                System.out.println("-----------------");
+                client.getServiceResponseDetails(s).print();
+            }
+        }
+        catch (InterruptedException ex) {
+            System.out.println("Process was interrupted.");
+        }
+        /*
         Service<Empty, Topics> topicService =
                 new Service<Empty, Topics>("/rosapi/topics", Empty.class, Topics.class, client);
         Service<Topic, Type> typeService =
@@ -48,11 +69,15 @@ public class Example {
                 details.print();
                 System.out.println();
             }
-            
+            Type type = new Type();
+            type.type = "time";
+            System.out.print("Single type check on \'time\': ");
+            messageService.callBlocking(type).print();
         }
         catch (InterruptedException ex) {
             System.out.println("testService: process was interrupted.");
         }
+        */
     }
     
     public static void testTopic(ROSBridgeClient client) {

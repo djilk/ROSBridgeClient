@@ -5,7 +5,9 @@
 
 package com.jilk.ros.rosbridge;
 
+import com.jilk.ros.Service;
 import com.jilk.ros.message.Message;
+import com.jilk.ros.rosapi.message.*;
 import com.jilk.ros.rosbridge.implementation.*;
 import com.jilk.ros.rosbridge.operation.*;
 
@@ -54,6 +56,67 @@ public class ROSBridgeClient {
 
     public void unregister(Class<? extends Operation> c, String s) {
         client.unregister(c, s);
+    }    
+    
+    public String[] getNodes() throws InterruptedException {
+        Service<Empty, Nodes> nodeService =
+                new Service<Empty, Nodes>("/rosapi/nodes", Empty.class, Nodes.class, this);
+        return nodeService.callBlocking(new Empty()).nodes;
     }
     
+    public String[] getTopics() throws InterruptedException {
+        Service<Empty, Topics> topicsService =
+                new Service<Empty, Topics>("/rosapi/topics", Empty.class, Topics.class, this);
+        return topicsService.callBlocking(new Empty()).topics;
+    }
+    
+    public String[] getServices() throws InterruptedException {
+        Service<Empty, Services> servicesService =
+                new Service<Empty, Services>("/rosapi/services", Empty.class, Services.class, this);
+        return servicesService.callBlocking(new Empty()).services;
+    }
+    
+    public TypeDef getTopicMessageDetails(String topic) throws InterruptedException {
+        return getTypeDetails(getTopicType(topic), "", "/rosapi/message_details");
+    }
+    
+    public TypeDef getServiceRequestDetails(String service) throws InterruptedException {
+        return getTypeDetails(getServiceType(service), "Request", "/rosapi/service_request_details");
+    }
+    
+    public TypeDef getServiceResponseDetails(String service) throws InterruptedException {
+        return getTypeDetails(getServiceType(service), "Response", "/rosapi/service_response_details");
+    }
+    
+    public TypeDef getTypeDetails(String type, String suffix, String serviceName) throws InterruptedException {
+        Service<Type, MessageDetails> messageDetailsService =
+                new Service<Type, MessageDetails>(serviceName,
+                    Type.class, MessageDetails.class, this);
+        return findType(type + suffix, messageDetailsService.callBlocking(new Type(type)).typedefs);
+    }
+    
+    private String getTopicType(String topic) throws InterruptedException {
+        Service<Topic, Type> topicTypeService =
+                new Service<Topic, Type>("/rosapi/topic_type",
+                    Topic.class, Type.class, this);
+        return topicTypeService.callBlocking(new Topic(topic)).type;
+    }
+    
+    private String getServiceType(String service) throws InterruptedException {
+        Service<com.jilk.ros.rosapi.message.Service, Type> serviceTypeService =
+                new Service<com.jilk.ros.rosapi.message.Service, Type>("/rosapi/service_type",
+                    com.jilk.ros.rosapi.message.Service.class, Type.class, this);
+        return serviceTypeService.callBlocking(new com.jilk.ros.rosapi.message.Service(service)).type;
+    }
+        
+    private TypeDef findType(String type, TypeDef[] types) {
+        TypeDef result = null;
+        for (TypeDef t : types) {
+            if (t.type.equals(type)) {
+                result = t;
+                break;
+            }
+        }
+        return result;
+    }
 }

@@ -12,4 +12,10 @@ import com.jilk.ros.message.MessageType;
 @MessageType(string = "rosapi/Topic")
 public class Topic extends Message {
     public String topic;
+    
+    public Topic() {}
+    
+    public Topic(String topic) {
+        this.topic = topic;
+    }
 }

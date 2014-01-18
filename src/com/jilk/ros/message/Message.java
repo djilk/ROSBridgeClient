@@ -16,6 +16,12 @@ import java.util.Map;
  */
 @MessageType(string = "message")
 public abstract class Message {
+    
+    // Some requirements about message types:
+    //   - Every field must be explicitly designated as public
+    //   - Every field that is not a primitive or near-primitive must be another Message class
+    //   - If there is a non-empty constructor, you must also have an empty constructor
+    
     public static void register(Class c, Map<String, Class> messageClasses) {
         try {
             typecheck(c);

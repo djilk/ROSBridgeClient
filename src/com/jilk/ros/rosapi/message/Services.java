@@ -12,13 +12,7 @@ import com.jilk.ros.message.MessageType;
  *
  * @author David J. Jilk
  */
-@MessageType(string = "rosapi/Type")
-public class Type extends Message {
-    public String type;
-    
-    public Type() {}
-    
-    public Type(String type) {
-        this.type = type;
-    }
+@MessageType(string = "rosapi/Services")
+public class Services extends Message {
+    public String[] services;
 }

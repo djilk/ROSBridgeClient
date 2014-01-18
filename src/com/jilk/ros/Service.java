@@ -16,8 +16,8 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 
 /*
- * TODO: 1. create an inner class instead of having three separate hashes.
- *       2. write the basic reflection calls for services, topics, and data types
+ * TODO: x 1. create an inner class instead of having three separate hashes.
+ *       x 2. write the basic reflection calls for services, topics, and data types
  *       3. build the "implements" method for TypeDef (compare with Java class)
  *       4. write the verify methods for Service and Topic
  */
@@ -32,18 +32,14 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
     private Class<ResponseType> responseType;
     private Class<CallType> callType;
     private ROSBridgeClient client;
-    private Map<String, ResponseType> results;
-    private Map<String, CountDownLatch> latches;
-    private Map<String, MessageHandler<ResponseType>> handlers;
+    private Map<String, CallRecord> calls;
     
     public Service(String service, Class<CallType> callType, Class<ResponseType> responseType, ROSBridgeClient client) {
         this.service = service;
         this.client = client;
         this.responseType = responseType;
         this.callType = callType;
-        results = new HashMap<String, ResponseType>();
-        latches = new HashMap<String, CountDownLatch>();
-        handlers = new HashMap<String, MessageHandler<ResponseType>>();
+        calls = new HashMap<String, CallRecord>();
     }
 
     // A result can only be returned once; it is cleared from the hash before 
@@ -53,16 +49,16 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
     
     @Override
     public void onMessage(String id, Message response) {        
-        System.out.print("Service.onMessage: ");
-        response.print();
-        MessageHandler<ResponseType> handler = handlers.get(id);
-        if (handler != null) {
-            clear(id);
-            handler.onMessage(id, (ResponseType) response);
+        //System.out.print("Service.onMessage: ");
+        //response.print();
+        CallRecord call = calls.get(id);
+        if (call.handler != null) {
+            calls.remove(id);
+            call.handler.onMessage(id, (ResponseType) response);
         }
         else {
-            results.put(id, (ResponseType) response);
-            latches.get(id).countDown();
+            call.result = (ResponseType) response;
+            call.latch.countDown();
         }
     }
     
@@ -80,27 +76,26 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
     
     private String callImpl(CallType args, MessageHandler<ResponseType> responseHandler) {
         client.register(ServiceResponse.class, service, responseType, this);  // do this once on creation?
-        CallService cs = new CallService(service, args);
-        String id = cs.id;
-        results.put(id, null);
-        latches.put(id, new CountDownLatch(1));
-        handlers.put(id, responseHandler);
-        client.send(cs);
+        CallService messageCallService = new CallService(service, args);
+        String id = messageCallService.id;
+        CallRecord callRecord = new CallRecord(responseHandler);
+        calls.put(id, callRecord);
+        client.send(messageCallService);
         return id;
     }
     
     public ResponseType poll(String id) {
-        ResponseType result = results.get(id);
-        if (result != null)
-            clear(id);
-        return result;
+        CallRecord call = calls.get(id);
+        if (call.result != null)
+            calls.remove(id);
+        return call.result;
     }
     
     public ResponseType take(String id) throws InterruptedException {
-        latches.get(id).await();
-        ResponseType result = results.get(id);
-        clear(id);
-        return result;
+        CallRecord call = calls.get(id);
+        call.latch.await();
+        calls.remove(id);
+        return call.result;
     }
     
     public boolean verify() {
@@ -110,10 +105,15 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
       return true;
     }
     
-    private void clear(String id) {
-        results.remove(id);
-        latches.remove(id);        
-        handlers.remove(id);
+    private class CallRecord {
+        public ResponseType result;
+        public CountDownLatch latch;
+        public MessageHandler<ResponseType> handler;
+        
+        public CallRecord(MessageHandler<ResponseType> handler) {
+            this.result = null;
+            this.latch = new CountDownLatch(1);
+            this.handler = handler;
+        }
     }
-
 }

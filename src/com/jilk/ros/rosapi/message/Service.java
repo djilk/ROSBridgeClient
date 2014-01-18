@@ -5,20 +5,17 @@
 
 package com.jilk.ros.rosapi.message;
 
+
 import com.jilk.ros.message.Message;
 import com.jilk.ros.message.MessageType;
 
-/**
- *
- * @author David J. Jilk
- */
-@MessageType(string = "rosapi/Type")
-public class Type extends Message {
-    public String type;
+@MessageType(string = "rosapi/Service")
+public class Service extends Message {
+    public String service;
     
-    public Type() {}
+    public Service() {}
     
-    public Type(String type) {
-        this.type = type;
+    public Service(String service) {
+        this.service = service;
     }
 }
