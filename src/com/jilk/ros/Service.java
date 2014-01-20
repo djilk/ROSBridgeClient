@@ -15,14 +15,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 
-/*
- * TODO: x 1. create an inner class instead of having three separate hashes.
- *       x 2. write the basic reflection calls for services, topics, and data types
- *       3. build the "implements" method for TypeDef (compare with Java class)
- *       4. write the verify methods for Service and Topic
- */
-
-
 /**
  *
  * @author David J. Jilk
@@ -98,11 +90,20 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
         return call.result;
     }
     
-    public boolean verify() {
-        // use discovery tools (rosapi) to confirm that
-        // this service is actually running and that the data types
-        // are correct. 
-      return true;
+    public void verify() throws InterruptedException {
+
+        boolean hasService = false;
+        for (String s : client.getServices()) {
+            if (s.equals(service)) {
+                hasService = true;
+                break;
+            }
+        }
+        if (!hasService)
+            throw new RuntimeException("Service \'" + service + "\' not available.");
+        
+        client.typeMatch(client.getServiceRequestDetails(service), callType);
+        client.typeMatch(client.getServiceResponseDetails(service), responseType);
     }
     
     private class CallRecord {

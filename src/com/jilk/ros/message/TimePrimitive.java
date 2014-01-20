@@ -9,8 +9,8 @@ package com.jilk.ros.message;
  *
  * @author David J. Jilk
  */
-@MessageType(string = "std_msgs/Time")
+@MessageType(string = "time")
 public class TimePrimitive extends Message {
-    public long secs;
-    public long nsecs;
+    public int sec;
+    public int nsec;
 }

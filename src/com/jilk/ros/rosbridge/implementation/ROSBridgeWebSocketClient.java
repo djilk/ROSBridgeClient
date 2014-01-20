@@ -114,4 +114,8 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         handlers.unregister(c, s);
         // Note that there is no concept of unregistering a class - it can get replaced is all
     }
+    
+    public Class<? extends Message> getRegisteredMessage(String messageString) {
+        return classes.lookup(Message.class, messageString);
+    }
 }

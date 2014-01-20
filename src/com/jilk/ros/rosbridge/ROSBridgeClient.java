@@ -10,6 +10,8 @@ import com.jilk.ros.message.Message;
 import com.jilk.ros.rosapi.message.*;
 import com.jilk.ros.rosbridge.implementation.*;
 import com.jilk.ros.rosbridge.operation.*;
+import java.lang.reflect.Field;
+import com.jilk.ros.message.MessageType;
 
 
 /**
@@ -77,7 +79,7 @@ public class ROSBridgeClient {
     }
     
     public TypeDef getTopicMessageDetails(String topic) throws InterruptedException {
-        return getTypeDetails(getTopicType(topic), "", "/rosapi/message_details");
+        return getTypeDetails(getTopicType(topic));
     }
     
     public TypeDef getServiceRequestDetails(String service) throws InterruptedException {
@@ -88,7 +90,11 @@ public class ROSBridgeClient {
         return getTypeDetails(getServiceType(service), "Response", "/rosapi/service_response_details");
     }
     
-    public TypeDef getTypeDetails(String type, String suffix, String serviceName) throws InterruptedException {
+    public TypeDef getTypeDetails(String type) throws InterruptedException {
+        return getTypeDetails(type, "", "/rosapi/message_details");
+    }
+    
+    private TypeDef getTypeDetails(String type, String suffix, String serviceName) throws InterruptedException {
         Service<Type, MessageDetails> messageDetailsService =
                 new Service<Type, MessageDetails>(serviceName,
                     Type.class, MessageDetails.class, this);
@@ -117,6 +123,60 @@ public class ROSBridgeClient {
                 break;
             }
         }
+        //System.out.println("ROSBridgeClient.findType: ");
+        //result.print();
         return result;
     }
+    
+    public void typeMatch(TypeDef t, Class<? extends Message> c) throws InterruptedException {
+        if (c == null)
+            throw new RuntimeException("No registered message type found for: " + t.type);
+        Field[] fields = c.getFields();
+        for (int i = 0; i < t.fieldnames.length; i++) {
+            
+            // Field names
+            String classFieldName = fields[i].getName();
+            String typeFieldName = t.fieldnames[i];
+            if (!classFieldName.equals(typeFieldName))
+                typeMatchError(t, c, "field name", typeFieldName, classFieldName);
+            
+            // Array type of field
+            boolean typeIsArray = (t.fieldarraylen[i] >= 0);
+            boolean fieldIsArray = fields[i].getType().isArray();
+            if (typeIsArray != fieldIsArray)
+                typeMatchError(t, c, "array mismatch", typeFieldName, classFieldName);
+            
+            // Get base type of field
+            Class fieldClass = fields[i].getType();
+            if (fieldIsArray)
+                fieldClass = fields[i].getType().getComponentType();
+            String type = t.fieldtypes[i];
+            
+            // Field type for primitives
+            if (Message.isPrimitive(fieldClass)) {
+                if (!TypeDef.match(type, fieldClass))
+                    typeMatchError(t, c, "type mismatch", type, fieldClass.getName());
+            }
+
+            // Field type for non-primitive classes, and recurse
+            else {
+                if (!Message.class.isAssignableFrom(fieldClass))
+                    throw new RuntimeException("Member " + classFieldName +
+                            " of class " + fieldClass.getName() + " does not extend Message.");
+                String fieldClassString = ((MessageType) fieldClass.getAnnotation(MessageType.class)).string();
+                if (!type.equals(fieldClassString))
+                    typeMatchError(t, c, "message type mismatch", type, fieldClassString);
+                typeMatch(getTypeDetails(type), fieldClass);
+            }                            
+        }
+    }
+    
+    private void typeMatchError(TypeDef t, Class<? extends Message> c,
+            String error, String tString, String cString) {
+        throw new RuntimeException("Type match error between " +
+                t.type + " and " + c.getName() + ": " +
+                error + ": \'" + tString + "\' does not match \'" + cString + "\'.");
+    }
+    
+    
 }

@@ -12,7 +12,9 @@ import com.jilk.ros.rosapi.message.Topic;
 import com.jilk.ros.rosapi.message.Type;
 import com.jilk.ros.rosapi.message.MessageDetails;
 import com.jilk.ros.rosapi.message.TypeDef;
+import com.jilk.ros.rosapi.message.GetTime;
 import com.jilk.ros.rosbridge.ROSBridgeClient;
+import com.jilk.ros.message.Log;
 
 /**
  *
@@ -26,12 +28,41 @@ public class Example {
         ROSBridgeClient client = new ROSBridgeClient("ws://162.243.238.80:9090");
         client.connect();
         //testTopic(client);
+        try {
         testService(client);
-        client.disconnect();
+        }
+        catch (RuntimeException ex) {
+            ex.printStackTrace();
+        }
+        finally {
+            client.disconnect();
+        }
     }            
     
     public static void testService(ROSBridgeClient client) {
         try {
+            Service<Empty, GetTime> timeService =
+                    new Service<Empty, GetTime>("/rosapi/get_time", Empty.class, GetTime.class, client); 
+            timeService.verify();
+            //System.out.println("Time (secs): " + timeService.callBlocking(new Empty()).time.sec);
+            
+            Service<com.jilk.ros.rosapi.message.Service, Type> serviceTypeService =
+                    new Service<com.jilk.ros.rosapi.message.Service, Type>("/rosapi/service_type",
+                        com.jilk.ros.rosapi.message.Service.class, Type.class, client);
+            serviceTypeService.verify();
+            String type = serviceTypeService.callBlocking(new com.jilk.ros.rosapi.message.Service("/rosapi/service_response_details")).type;
+            
+            Service<Type, MessageDetails> serviceDetails =
+                    new Service<Type, MessageDetails>("/rosapi/service_response_details",
+                        Type.class, MessageDetails.class, client);
+            serviceDetails.verify();
+            //serviceDetails.callBlocking(new Type(type)).print();
+            
+            com.jilk.ros.Topic<Log> logTopic = 
+                    new com.jilk.ros.Topic<Log>("/rosout", Log.class, client);
+            logTopic.verify();
+            
+            /*
             System.out.println("Nodes");
             for (String s : client.getNodes())
                 System.out.println("    " + s);
@@ -47,6 +78,7 @@ public class Example {
                 System.out.println("-----------------");
                 client.getServiceResponseDetails(s).print();
             }
+            */
         }
         catch (InterruptedException ex) {
             System.out.println("Process was interrupted.");
@@ -90,7 +122,7 @@ public class Example {
         }
         catch (InterruptedException ex) {}
         cl.print();
-        cl.clock.nsecs++;
+        cl.clock.nsec++;
         clockTopic.unsubscribe();
         clockTopic.advertise();
         clockTopic.publish(cl);

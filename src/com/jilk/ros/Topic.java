@@ -69,4 +69,20 @@ public class Topic<T extends Message> extends LinkedBlockingQueue<T> implements 
     private void send(Operation operation) {
         client.send(operation);
     }
+    
+    public void verify() throws InterruptedException {
+
+        boolean hasTopic = false;
+        for (String s : client.getTopics()) {
+            if (s.equals(topic)) {
+                hasTopic = true;
+                break;
+            }
+        }
+        if (!hasTopic)
+            throw new RuntimeException("Topic \'" + topic + "\' not available.");
+        
+        client.typeMatch(client.getTopicMessageDetails(topic), type);
+    }
+    
 }
