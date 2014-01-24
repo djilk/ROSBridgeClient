@@ -60,6 +60,10 @@ public class ROSBridgeClient {
         client.unregister(c, s);
     }    
     
+    public void setDebug(boolean debug) {
+        client.setDebug(debug);
+    }
+    
     public String[] getNodes() throws InterruptedException {
         Service<Empty, Nodes> nodeService =
                 new Service<Empty, Nodes>("/rosapi/nodes", Empty.class, Nodes.class, this);

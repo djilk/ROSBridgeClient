@@ -122,7 +122,7 @@ public class Example {
         }
         catch (InterruptedException ex) {}
         cl.print();
-        cl.clock.nsec++;
+        cl.clock.nsecs++;
         clockTopic.unsubscribe();
         clockTopic.advertise();
         clockTopic.publish(cl);

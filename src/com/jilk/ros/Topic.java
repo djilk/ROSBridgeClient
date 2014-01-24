@@ -12,18 +12,19 @@ import com.jilk.ros.rosbridge.MessageHandler;
 import com.jilk.ros.rosbridge.ROSBridgeClient;
 import com.jilk.ros.rosbridge.operation.*;
 
+
 /**
  *
  * @author David J. Jilk
  */
 public class Topic<T extends Message> extends LinkedBlockingQueue<T> implements MessageHandler {
     private String topic;
-    private Class<T> type;
+    private Class<? extends T> type;
     private String messageType;
     private MessageHandler<T> handler;
     private ROSBridgeClient client;
     
-    public Topic(String topic, Class<T> type, ROSBridgeClient client) {
+    public Topic(String topic, Class<? extends T> type, ROSBridgeClient client) {
         this.topic = topic;
         this.client = client;
         this.type = type;

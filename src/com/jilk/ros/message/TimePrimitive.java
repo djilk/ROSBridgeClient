@@ -11,6 +11,6 @@ package com.jilk.ros.message;
  */
 @MessageType(string = "time")
 public class TimePrimitive extends Message {
-    public int sec;
-    public int nsec;
+    public int secs;  // when requesting this format from ROSbridge, it uses 'sec' (no 's')
+    public int nsecs; // when requesting this format from ROSbridge, it uses 'nsec'
 }

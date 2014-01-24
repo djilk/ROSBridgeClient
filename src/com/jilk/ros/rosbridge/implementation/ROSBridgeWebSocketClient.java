@@ -24,6 +24,7 @@ import com.jilk.ros.rosbridge.operation.ServiceResponse;
 public class ROSBridgeWebSocketClient extends WebSocketClient {
     private Registry<Class> classes;
     private Registry<MessageHandler> handlers;
+    private boolean debug;
     
     ROSBridgeWebSocketClient(URI serverURI) {
         super(serverURI);
@@ -51,6 +52,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
+        if (debug) System.out.println("<ROS " + message);
         //System.out.println("ROSBridgeWebSocketClient.onMessage (message): " + message);
         Operation operation = Operation.toOperation(message, classes);
         //System.out.println("ROSBridgeWebSocketClient.onMessage (operation): ");
@@ -97,7 +99,9 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     }
     
     public void send(Operation operation) {
-        send(operation.toJSON());
+        String json = operation.toJSON();
+        if (debug) System.out.println("ROS> " + json);
+        send(json);
     }
     
     public void register(Class<? extends Operation> c,
@@ -117,5 +121,9 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     
     public Class<? extends Message> getRegisteredMessage(String messageString) {
         return classes.lookup(Message.class, messageString);
+    }
+    
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 }
