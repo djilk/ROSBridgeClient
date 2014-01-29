@@ -21,12 +21,13 @@ import java.util.concurrent.CountDownLatch;
  */
 public class Service<CallType extends Message, ResponseType extends Message> implements MessageHandler {
     private String service;
-    private Class<ResponseType> responseType;
-    private Class<CallType> callType;
+    private Class<? extends ResponseType> responseType;
+    private Class<? extends CallType> callType;
     private ROSBridgeClient client;
     private Map<String, CallRecord> calls;
     
-    public Service(String service, Class<CallType> callType, Class<ResponseType> responseType, ROSBridgeClient client) {
+    public Service(String service, Class<? extends CallType> callType,
+            Class<? extends ResponseType> responseType, ROSBridgeClient client) {
         this.service = service;
         this.client = client;
         this.responseType = responseType;
