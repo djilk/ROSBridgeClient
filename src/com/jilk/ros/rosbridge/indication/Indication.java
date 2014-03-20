@@ -21,6 +21,12 @@ public class Indication {
         return (f.getAnnotation(AsArray.class) != null);
     }
     
+    public static boolean isBase64Encoded(Field f) {
+        return ((f.getAnnotation(Base64Encoded.class) != null) &&
+                f.getType().isArray() &&
+                f.getType().getComponentType().equals(byte.class)); 
+    }
+    
     public static String getIndicatorName(Class c) {
         return getName(c, Indicator.class);
     }

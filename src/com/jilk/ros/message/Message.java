@@ -45,6 +45,19 @@ public abstract class Message {
     
     public static String getMessageType(Class c) {
         return ((MessageType) c.getAnnotation(MessageType.class)).string();
+    }    
+    
+    // this has never been used or tested but kind of belongs here
+    public static Message newInstance(String className) {
+        try {
+            Class messageClass = Class.forName(className);
+            if (Message.class.isAssignableFrom(messageClass))
+                return (Message) messageClass.newInstance();
+            else throw new ClassCastException();
+        }
+        catch (ReflectiveOperationException ex) {
+            throw new RuntimeException("Unable to create message of class \'" + className + "\'.", ex);
+        }
     }
     
     // Could probably do more checking here, but not sure what right now
@@ -126,6 +139,7 @@ public abstract class Message {
                 Number.class.isAssignableFrom(c) ||
                 c.equals(Boolean.class));        
     }    
+    
 
     // Copied from com.jilk.ros.rosbridge.JSON
     private static Object getFieldObject(Field f, Object o) {
@@ -137,6 +151,27 @@ public abstract class Message {
             ex.printStackTrace();
         }
         return fo;
+    }
+    
+    public void copyFrom(Message source) {
+        try {
+            if (source.getClass() != getClass())
+                throw new RuntimeException("Attempt to copy non-matching classes");
+            for (Field f : getClass().getFields()) {
+                Class fc = f.getType();
+                if (fc.isArray())
+                    throw new RuntimeException("copyFrom - array types not implemented");
+                else if (!isPrimitive(fc))
+                    ((Message) f.get(this)).copyFrom((Message) f.get(source));
+                else {
+                    Object value = f.get(source);
+                    f.set(this, value);
+                }
+            }
+        }
+        catch (ReflectiveOperationException ex) {
+            throw new RuntimeException ("copyFrom error", ex);
+        }        
     }
     
 }

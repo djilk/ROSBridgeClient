@@ -83,7 +83,9 @@ public class JSON {
             Object fieldObject = getFieldObject(f, o);
             if (fieldObject != null) {
                 Object resultObject;
-                if (Indication.asArray(f))
+                if (Indication.isBase64Encoded(f))
+                    resultObject = convertByteArrayToBase64JSONString(fieldObject);
+                else if (Indication.asArray(f))
                     resultObject = convertObjectToJSONArray(fieldObject);
                 else resultObject = convertElementToJSON(fieldObject);
                 result.put(f.getName(), resultObject);
@@ -132,6 +134,11 @@ public class JSON {
         else
             resultObject = convertObjectToJSONObject(elementObject);
         return resultObject;
+    }
+
+    // Special case for Base 64-encoded fields
+    private static Object convertByteArrayToBase64JSONString(Object fieldObject) {
+        return Base64.encodeToString((byte[]) fieldObject, false);    
     }
     
     // This is just to buffer the code from the exception. Better error
@@ -259,10 +266,14 @@ public class JSON {
                 value = convertJSONArrayToMessage((JSONArray) element, fc, r);
             else value = convertJSONArrayToArray((JSONArray) element, fc, r);
         }
-        else
-            value = convertJSONPrimitiveToPrimitive(element, fc);
+        else {
+            //System.out.println("JSON.convertElementToField: Primitive " + element);
+            if (Indication.isBase64Encoded(f))
+                value = convertBase64JSONStringToByteArray(element);
+            else value = convertJSONPrimitiveToPrimitive(element, fc);
+        }
          
-       return value;        
+        return value;        
     }
     
     // Note that this is not checking ranges
@@ -285,6 +296,9 @@ public class JSON {
         return result;
     }
     
+    public static byte[] convertBase64JSONStringToByteArray(Object element) {
+        return Base64.decode((String) element);
+    }    
 
     // Determine the target class of a field in the object or array, based
     //    directly on the field's type, or using the Indicator if applicable,    
