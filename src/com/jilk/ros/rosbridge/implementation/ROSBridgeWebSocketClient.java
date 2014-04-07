@@ -11,9 +11,9 @@ import java.net.URISyntaxException;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
+import com.jilk.ros.rosbridge.FullMessageHandler;
 import com.jilk.ros.rosbridge.operation.Operation;
 import com.jilk.ros.message.Message;
-import com.jilk.ros.MessageHandler;
 import com.jilk.ros.rosbridge.operation.Publish;
 import com.jilk.ros.rosbridge.operation.ServiceResponse;
 
@@ -23,13 +23,13 @@ import com.jilk.ros.rosbridge.operation.ServiceResponse;
  */
 public class ROSBridgeWebSocketClient extends WebSocketClient {
     private Registry<Class> classes;
-    private Registry<MessageHandler> handlers;
+    private Registry<FullMessageHandler> handlers;
     private boolean debug;
     
     ROSBridgeWebSocketClient(URI serverURI) {
         super(serverURI);
         classes = new Registry<Class>();
-        handlers = new Registry<MessageHandler>();
+        handlers = new Registry<FullMessageHandler>();
         Operation.initialize(classes);  // note, this ensures that the Message Map is initialized too
     }
     
@@ -58,7 +58,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         //System.out.println("ROSBridgeWebSocketClient.onMessage (operation): ");
         //operation.print();
         
-        MessageHandler handler = null;
+        FullMessageHandler handler = null;
         Message msg = null;
         if (operation instanceof Publish) {
             Publish p = (Publish) operation;
@@ -79,8 +79,12 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         
         if (handler != null)
             handler.onMessage(operation.id, msg);
-        else {
-            System.out.println("No handler for message id# " + operation.id);
+        else if (debug) {
+            System.out.print("No handler: id# " + operation.id + ", ");
+            if (operation instanceof Publish)
+                System.out.println("Publish " + ((Publish) operation).topic); 
+            else if (operation instanceof ServiceResponse)
+                System.out.println("Service Response " + ((ServiceResponse) operation).service); 
             //operation.print();
         }
     }
@@ -109,7 +113,7 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     public void register(Class<? extends Operation> c,
             String s,
             Class<? extends Message> m,
-            MessageHandler h) {
+            FullMessageHandler h) {
         Message.register(m, classes.get(Message.class));
         classes.register(c, s, m);
         if (h != null)

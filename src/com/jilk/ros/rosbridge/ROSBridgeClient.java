@@ -54,7 +54,7 @@ public class ROSBridgeClient extends ROSClient {
     public void register(Class<? extends Operation> c,
             String s,
             Class<? extends Message> m,
-            MessageHandler h) {
+            FullMessageHandler h) {
         client.register(c, s, m, h);
     }
 

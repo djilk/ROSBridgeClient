@@ -8,6 +8,7 @@ package com.jilk.ros;
 import com.jilk.ros.message.Message;
 import com.jilk.ros.rosbridge.operation.CallService;
 import com.jilk.ros.rosbridge.operation.ServiceResponse;
+import com.jilk.ros.rosbridge.FullMessageHandler;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -17,7 +18,7 @@ import java.util.concurrent.CountDownLatch;
  *
  * @author David J. Jilk
  */
-public class Service<CallType extends Message, ResponseType extends Message> implements MessageHandler {
+public class Service<CallType extends Message, ResponseType extends Message> implements FullMessageHandler {
     private String service;
     private Class<? extends ResponseType> responseType;
     private Class<? extends CallType> callType;
@@ -45,7 +46,7 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
         CallRecord call = calls.get(id);
         if (call.handler != null) {
             calls.remove(id);
-            call.handler.onMessage(id, (ResponseType) response);
+            call.handler.onMessage((ResponseType) response);
         }
         else {
             call.result = (ResponseType) response;

@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.jilk.ros;
+package com.jilk.ros.rosbridge;
 
 import com.jilk.ros.message.Message;
 
@@ -10,6 +10,6 @@ import com.jilk.ros.message.Message;
  *
  * @author david_000
  */
-public interface MessageHandler<T extends Message> {
-    public void onMessage(T message);
+public interface FullMessageHandler<T extends Message> {
+    public void onMessage(String id, T message);
 }

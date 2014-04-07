@@ -9,6 +9,7 @@ import com.jilk.ros.message.Message;
 import com.jilk.ros.rosapi.message.TypeDef;
 import com.jilk.ros.rosbridge.operation.Operation;
 import com.jilk.ros.rosbridge.ROSBridgeClient;
+import com.jilk.ros.rosbridge.FullMessageHandler;
 
 /**
  *
@@ -30,7 +31,7 @@ public abstract class ROSClient {
     public abstract void register(Class<? extends Operation> c,
             String s,
             Class<? extends Message> m,
-            MessageHandler h);
+            FullMessageHandler h);
     public abstract void unregister(Class<? extends Operation> c, String s);
     public abstract void setDebug(boolean debug);
     public abstract String[] getNodes() throws InterruptedException;
