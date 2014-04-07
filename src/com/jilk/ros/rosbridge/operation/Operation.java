@@ -17,7 +17,6 @@ import com.jilk.ros.rosbridge.implementation.Registry;
  */
 @MessageType(string = "operation")
 public class Operation extends Message {
-    private static boolean initialized = false;
     private static Long uid = 0L;
 
     public String op;
@@ -43,27 +42,24 @@ public class Operation extends Message {
     }
     
     public static void initialize(Registry<Class> registry) {
-        if (!initialized) {
-            initClass(registry, Advertise.class);
-            initClass(registry, Authenticate.class);
-            initClass(registry, CallService.class);
-            initClass(registry, Fragment.class);
-            initClass(registry, Operation.class);
-            initClass(registry, PNG.class);
-            initClass(registry, Publish.class);
-            initClass(registry, ServiceResponse.class);
-            initClass(registry, SetStatusLevel.class);
-            initClass(registry, Status.class);
-            initClass(registry, Subscribe.class);
-            initClass(registry, Unadvertise.class);
-            initClass(registry, Unsubscribe.class);
-            initClass(registry, Wrapper.class);
-            
-            registry.register(Wrapper.class, Message.getMessageType(Publish.class), Publish.class);
-            registry.register(Wrapper.class, Message.getMessageType(CallService.class), CallService.class);
-            registry.register(Wrapper.class, Message.getMessageType(ServiceResponse.class), ServiceResponse.class);
-            initialized = true;
-        }
+        initClass(registry, Advertise.class);
+        initClass(registry, Authenticate.class);
+        initClass(registry, CallService.class);
+        initClass(registry, Fragment.class);
+        initClass(registry, Operation.class);
+        initClass(registry, PNG.class);
+        initClass(registry, Publish.class);
+        initClass(registry, ServiceResponse.class);
+        initClass(registry, SetStatusLevel.class);
+        initClass(registry, Status.class);
+        initClass(registry, Subscribe.class);
+        initClass(registry, Unadvertise.class);
+        initClass(registry, Unsubscribe.class);
+        initClass(registry, Wrapper.class);
+
+        registry.register(Wrapper.class, Message.getMessageType(Publish.class), Publish.class);
+        registry.register(Wrapper.class, Message.getMessageType(CallService.class), CallService.class);
+        registry.register(Wrapper.class, Message.getMessageType(ServiceResponse.class), ServiceResponse.class);
     }    
     
     private static void initClass(Registry<Class> registry, Class<? extends Message> c) {

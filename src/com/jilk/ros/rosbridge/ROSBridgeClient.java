@@ -5,8 +5,10 @@
 
 package com.jilk.ros.rosbridge;
 
+import com.jilk.ros.MessageHandler;
 import com.jilk.ros.Service;
 import com.jilk.ros.message.Message;
+import com.jilk.ros.ROSClient;
 import com.jilk.ros.rosapi.message.*;
 import com.jilk.ros.rosbridge.implementation.*;
 import com.jilk.ros.rosbridge.operation.*;
@@ -18,7 +20,7 @@ import com.jilk.ros.message.MessageType;
  *
  * @author David J. Jilk
  */
-public class ROSBridgeClient {
+public class ROSBridgeClient extends ROSClient {
     String uriString;
     ROSBridgeWebSocketClient client;
     

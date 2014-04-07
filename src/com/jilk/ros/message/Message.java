@@ -48,6 +48,8 @@ public abstract class Message {
     }    
     
     // this has never been used or tested but kind of belongs here
+    // commented out because it uses ReflectiveOperationException which is not available on Android
+    /*
     public static Message newInstance(String className) {
         try {
             Class messageClass = Class.forName(className);
@@ -59,6 +61,7 @@ public abstract class Message {
             throw new RuntimeException("Unable to create message of class \'" + className + "\'.", ex);
         }
     }
+    */
     
     // Could probably do more checking here, but not sure what right now
     private static void typecheck(Class c) throws MessageException {
@@ -169,9 +172,18 @@ public abstract class Message {
                 }
             }
         }
+        catch (IllegalAccessException ex) {
+            throw new RuntimeException ("copyFrom error", ex);
+        }
+        catch (ClassCastException ex) {
+            throw new RuntimeException ("copyFrom error", ex);
+        }
+        // ReflectiveOperationException is not available on Android (Java 1.6)
+        /*
         catch (ReflectiveOperationException ex) {
             throw new RuntimeException ("copyFrom error", ex);
-        }        
+        }
+        */
     }
     
 }

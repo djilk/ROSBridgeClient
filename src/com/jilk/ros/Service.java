@@ -6,8 +6,6 @@
 package com.jilk.ros;
 
 import com.jilk.ros.message.Message;
-import com.jilk.ros.rosbridge.MessageHandler;
-import com.jilk.ros.rosbridge.ROSBridgeClient;
 import com.jilk.ros.rosbridge.operation.CallService;
 import com.jilk.ros.rosbridge.operation.ServiceResponse;
 
@@ -23,11 +21,11 @@ public class Service<CallType extends Message, ResponseType extends Message> imp
     private String service;
     private Class<? extends ResponseType> responseType;
     private Class<? extends CallType> callType;
-    private ROSBridgeClient client;
+    private ROSClient client;
     private Map<String, CallRecord> calls;
     
     public Service(String service, Class<? extends CallType> callType,
-            Class<? extends ResponseType> responseType, ROSBridgeClient client) {
+            Class<? extends ResponseType> responseType, ROSClient client) {
         this.service = service;
         this.client = client;
         this.responseType = responseType;
