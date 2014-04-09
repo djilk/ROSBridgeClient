@@ -29,9 +29,14 @@ public class ROSBridgeClient extends ROSClient {
     }
     
     public boolean connect() {
+        return connect(null);
+    }
+    
+    public boolean connect(ROSClient.ConnectionStatusListener listener) {
         boolean result = false;
         client = ROSBridgeWebSocketClient.create(uriString);
         if (client != null) {
+            client.setListener(listener);
             try {
                 result = client.connectBlocking();
             }
@@ -182,6 +187,10 @@ public class ROSBridgeClient extends ROSClient {
         throw new RuntimeException("Type match error between " +
                 t.type + " and " + c.getName() + ": " +
                 error + ": \'" + tString + "\' does not match \'" + cString + "\'.");
+    }
+    
+    public Object getUnderlyingClient() {
+        return client;
     }
     
     

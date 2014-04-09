@@ -26,6 +26,7 @@ public abstract class ROSClient {
     }
     
     public abstract boolean connect();
+    public abstract boolean connect(ROSClient.ConnectionStatusListener listener);
     public abstract void disconnect();
     public abstract void send(Operation operation);
     public abstract void register(Class<? extends Operation> c,
@@ -41,5 +42,12 @@ public abstract class ROSClient {
     public abstract TypeDef getServiceRequestDetails(String service) throws InterruptedException;
     public abstract TypeDef getServiceResponseDetails(String service) throws InterruptedException;
     public abstract TypeDef getTypeDetails(String type) throws InterruptedException;
-    public abstract void typeMatch(TypeDef t, Class<? extends Message> c) throws InterruptedException;    
+    public abstract void typeMatch(TypeDef t, Class<? extends Message> c) throws InterruptedException; 
+    public abstract Object getUnderlyingClient(); // for debugging
+    
+    public interface ConnectionStatusListener {
+        public void onConnect();
+        public void onDisconnect(boolean normal, String reason, int code);
+        public void onError(Exception ex);
+    }
 }

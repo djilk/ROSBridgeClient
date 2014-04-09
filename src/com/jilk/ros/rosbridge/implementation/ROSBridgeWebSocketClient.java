@@ -16,6 +16,13 @@ import com.jilk.ros.rosbridge.operation.Operation;
 import com.jilk.ros.message.Message;
 import com.jilk.ros.rosbridge.operation.Publish;
 import com.jilk.ros.rosbridge.operation.ServiceResponse;
+import com.jilk.ros.ROSClient;
+import org.java_websocket.framing.CloseFrame;
+
+import java.lang.reflect.Field;
+import java.nio.channels.SocketChannel;
+import java.net.Socket;
+
 
 /**
  *
@@ -25,12 +32,14 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
     private Registry<Class> classes;
     private Registry<FullMessageHandler> handlers;
     private boolean debug;
+    private ROSClient.ConnectionStatusListener listener;
     
     ROSBridgeWebSocketClient(URI serverURI) {
         super(serverURI);
         classes = new Registry<Class>();
         handlers = new Registry<FullMessageHandler>();
         Operation.initialize(classes);  // note, this ensures that the Message Map is initialized too
+        listener = null;
     }
     
     public static ROSBridgeWebSocketClient create(String URIString) {
@@ -44,10 +53,15 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
         }
         return client;
     }
+    
+    public void setListener(ROSClient.ConnectionStatusListener listener) {
+        this.listener = listener;
+    }
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        //System.out.println("Connection open.");
+        if (listener != null)
+            listener.onConnect();
     }
 
     @Override
@@ -91,18 +105,42 @@ public class ROSBridgeWebSocketClient extends WebSocketClient {
        
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        // Close codes are documented in class org.java_websocket.framing.CloseFrame
-        /*
-        System.out.println("Connection closed.");
-        if (remote)
-            System.out.println("Reason: " + reason);
-        */
+        if (listener != null) {
+            boolean normal = (remote || (code == CloseFrame.NORMAL));
+            listener.onDisconnect(normal, reason, code);
+        }
     }
 
     @Override
     public void onError(Exception ex) {
-        ex.printStackTrace();
+        if (listener != null)
+            listener.onError(ex);
+        else ex.printStackTrace();
     }
+    
+    // There is a bug in V1.2 of java_websockets that seems to appear only in Android, specifically,
+    //    it does not shut down the thread and starts using gobs of RAM (symptom is frequent garbage collection).
+    //    This method goes into the WebSocketClient object and hard-closes the socket, which causes the thread
+    //    to exit (note, just interrupting the thread does not work).
+    @Override
+    public void closeBlocking() throws InterruptedException {
+        super.closeBlocking();
+        try {
+            Field channelField = this.getClass().getSuperclass().getDeclaredField("channel");
+            channelField.setAccessible(true);
+            SocketChannel channel = (SocketChannel) channelField.get(this);
+            if (channel != null && channel.isOpen()) {
+                Socket socket = channel.socket();
+                if (socket != null)
+                        socket.close();
+            }
+        }
+        catch (Exception ex) {
+            System.out.println("Exception in Websocket close hack.");
+            ex.printStackTrace();
+        }
+    }
+    
     
     public void send(Operation operation) {
         String json = operation.toJSON();
