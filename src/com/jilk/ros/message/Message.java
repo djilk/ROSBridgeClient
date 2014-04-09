@@ -18,9 +18,12 @@ import java.util.Map;
 public abstract class Message {
     
     // Some requirements about message types:
+    //   - It must have a MessageType declaration to be recognized on inbound messages
     //   - Every field must be explicitly designated as public
     //   - Every field that is not a primitive or near-primitive must be another Message class
     //   - If there is a non-empty constructor, you must also have an empty constructor
+    //   - If it is set up as an inner class, it needs an explicit nullary constructor
+    //     (note: I have seen an inner class otherwise fail, I have not tested it with the explicit constructor)
     
     public static void register(Class c, Map<String, Class> messageClasses) {
         try {
