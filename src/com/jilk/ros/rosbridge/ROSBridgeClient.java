@@ -1,11 +1,24 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2014 Jilk Systems, Inc.
+ * 
+ * This file is part of the Java ROSBridge Client.
+ *
+ * The Java ROSBridge Client is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The Java ROSBridge Client is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the Java ROSBridge Client.  If not, see http://www.gnu.org/licenses/.
+ * 
  */
-
 package com.jilk.ros.rosbridge;
 
-import com.jilk.ros.MessageHandler;
 import com.jilk.ros.Service;
 import com.jilk.ros.message.Message;
 import com.jilk.ros.ROSClient;
@@ -15,11 +28,6 @@ import com.jilk.ros.rosbridge.operation.*;
 import java.lang.reflect.Field;
 import com.jilk.ros.message.MessageType;
 
-
-/**
- *
- * @author David J. Jilk
- */
 public class ROSBridgeClient extends ROSClient {
     String uriString;
     ROSBridgeWebSocketClient client;
@@ -28,10 +36,12 @@ public class ROSBridgeClient extends ROSClient {
         this.uriString = uriString;
     }
     
+    @Override
     public boolean connect() {
         return connect(null);
     }
     
+    @Override
     public boolean connect(ROSClient.ConnectionStatusListener listener) {
         boolean result = false;
         client = ROSBridgeWebSocketClient.create(uriString);
@@ -45,6 +55,7 @@ public class ROSBridgeClient extends ROSClient {
         return result;
     }
     
+    @Override
     public void disconnect() {
         try {
             client.closeBlocking();
@@ -52,10 +63,12 @@ public class ROSBridgeClient extends ROSClient {
         catch (InterruptedException ex) {}
     }
     
+    @Override
     public void send(Operation operation) {
         client.send(operation);
     }
     
+    @Override
     public void register(Class<? extends Operation> c,
             String s,
             Class<? extends Message> m,
@@ -63,44 +76,53 @@ public class ROSBridgeClient extends ROSClient {
         client.register(c, s, m, h);
     }
 
+    @Override
     public void unregister(Class<? extends Operation> c, String s) {
         client.unregister(c, s);
     }    
     
+    @Override
     public void setDebug(boolean debug) {
         client.setDebug(debug);
     }
     
+    @Override
     public String[] getNodes() throws InterruptedException {
         Service<Empty, Nodes> nodeService =
                 new Service<Empty, Nodes>("/rosapi/nodes", Empty.class, Nodes.class, this);
         return nodeService.callBlocking(new Empty()).nodes;
     }
     
+    @Override
     public String[] getTopics() throws InterruptedException {
         Service<Empty, Topics> topicsService =
                 new Service<Empty, Topics>("/rosapi/topics", Empty.class, Topics.class, this);
         return topicsService.callBlocking(new Empty()).topics;
     }
     
+    @Override
     public String[] getServices() throws InterruptedException {
         Service<Empty, Services> servicesService =
                 new Service<Empty, Services>("/rosapi/services", Empty.class, Services.class, this);
         return servicesService.callBlocking(new Empty()).services;
     }
     
+    @Override
     public TypeDef getTopicMessageDetails(String topic) throws InterruptedException {
         return getTypeDetails(getTopicType(topic));
     }
     
+    @Override
     public TypeDef getServiceRequestDetails(String service) throws InterruptedException {
         return getTypeDetails(getServiceType(service), "Request", "/rosapi/service_request_details");
     }
     
+    @Override
     public TypeDef getServiceResponseDetails(String service) throws InterruptedException {
         return getTypeDetails(getServiceType(service), "Response", "/rosapi/service_response_details");
     }
     
+    @Override
     public TypeDef getTypeDetails(String type) throws InterruptedException {
         return getTypeDetails(type, "", "/rosapi/message_details");
     }
@@ -139,6 +161,7 @@ public class ROSBridgeClient extends ROSClient {
         return result;
     }
     
+    @Override
     public void typeMatch(TypeDef t, Class<? extends Message> c) throws InterruptedException {
         if (c == null)
             throw new RuntimeException("No registered message type found for: " + t.type);
@@ -189,9 +212,9 @@ public class ROSBridgeClient extends ROSClient {
                 error + ": \'" + tString + "\' does not match \'" + cString + "\'.");
     }
     
+    @Override
     public Object getUnderlyingClient() {
         return client;
-    }
-    
+    }    
     
 }
